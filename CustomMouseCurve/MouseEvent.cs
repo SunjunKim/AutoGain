@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MouseTester
 {
-    public class MouseEvent
+    public struct MouseEvent
     {
         public ushort buttonflags;
         public int lastx;

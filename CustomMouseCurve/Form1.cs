@@ -32,23 +32,29 @@ namespace CustomMouseCurve
         
         double accel = 1.0;             // acceleration parameter #1
         double speed = 0.5;             // acceleration parameter #2
-        bool doTranslate = true;        // 
+        bool doTranslate = true;        // true if it translate the mouse events
+        int unusedCounter = 0;
 
+        MouseLogger logs = new MouseLogger(10);
 
         void m_GlobalHook_MouseUp(object sender, MouseEventArgs e)
         {
-            Console.WriteLine("Mouse up " + e.Button);
+            Debug.WriteLine("Mouse up " + e.Button);
         }
 
         void m_GlobalHook_MouseDown(object sender, MouseEventArgs e)
         {
-            Console.WriteLine("Mouse down " + e.Button);
+            Debug.WriteLine("Mouse down " + e.Button);
         }
 
         private void readMouseEvent(object RawMouse, MouseEvent meventinfo)
         {
             if (doTranslate)
+            {
                 translateMouseMove(meventinfo.lastx, meventinfo.lasty * -1, meventinfo.ts, meventinfo.source);
+            }
+            unusedCounter = 0;
+            logs.Add(meventinfo);    
 
             label3.Text = "Device = " + meventinfo.source;
         }
@@ -82,22 +88,20 @@ namespace CustomMouseCurve
             // dr = mouse displacement
             // v = speed (pixel/ms)
             double dr = Math.Sqrt(x * x + y * y);
-            double v = dr / timespan;
             
             if (dr == 0 || timespan == 0)
             {
-                // Reset counters;
-                lastEventTimestamp = 0;
-                mouse.StopWatchReset();
+                // error handling (in case of div by zero)
                 return;
             }
 
-
+            double v = dr / timespan;
+            
             // Example acceleration function http://stackoverflow.com/questions/8773037/how-to-simulate-mouse-acceleration
             // custom acceleration function
             #region gain function region
             double a = speed;
-            double b = accel;
+            double b = accel / 10;
 
             double vNew = a * v + b * v * v;
             double drNew = vNew * timespan;           
@@ -115,10 +119,20 @@ namespace CustomMouseCurve
                 p.y = 0;
             #endregion
 
-            // set new mouse pointer coordinate
-            p.x += xNew;
-            p.y += yNew;
+            Win32.POINT pt = Win32.GetCursorPosition();
 
+            if(Math.Sqrt(Math.Pow(p.x - pt.X,2)+Math.Pow(p.x - pt.X,2))>5)
+            {
+                p.x = pt.X;
+                p.y = pt.Y;
+            }
+            else
+            {
+                // set new mouse pointer coordinate
+                p.x += xNew;
+                p.y += yNew;
+            }
+            
             // move the mouse pointer
             Win32.setCursorAbsolute((int)p.x, (int)p.y);
             
@@ -135,10 +149,11 @@ namespace CustomMouseCurve
             if (!isInsideScreen) // if p.x or p.y goes beyond the screen bounds...
             {
                 // reset the p.x and p.y by newly reading the mouse positions                
-                Win32.POINT pt = Win32.GetCursorPosition();
                 p.x = pt.X;
                 p.y = pt.Y;
             }
+
+
         }
 
         public Form1()
@@ -227,7 +242,16 @@ namespace CustomMouseCurve
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            toolStripStatusLabel1.Text = "Polling rate = " + polling + " Hz";
+            unusedCounter++;
+            toolStripStatusLabel1.Text = "Rate: " + polling + " Hz / Log: " + logs.Events.Count;
+
+            // if a mouse is unused until 60s, reset the counter;
+            if(unusedCounter > 5)
+            {
+                unusedCounter = 0;
+                mouse.StopWatchReset();
+                logs.Clear();
+            }
             polling = 0;
         }
 
@@ -266,6 +290,11 @@ namespace CustomMouseCurve
             }
         }
         #endregion
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            logs.Save("Test.csv");
+        }
     }
 
     public class Point

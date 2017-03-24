@@ -434,7 +434,7 @@ namespace MouseTester
                             String id = match.Groups["Vid"].ToString() + "_" + match.Groups["Pid"].ToString();
                             dInfo.source = id;
 
-                            Console.WriteLine("{0},{1},{2}", dInfo.deviceName, id, dInfo.deviceHandle);
+                            Debug.WriteLine("{0},{1},{2}", dInfo.deviceName, id, dInfo.deviceHandle);
 
                             if (!deviceList.Contains(rid.hDevice))
                             {
