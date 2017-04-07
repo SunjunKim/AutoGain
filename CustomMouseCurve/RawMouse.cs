@@ -16,10 +16,17 @@ namespace MouseTester
         #region const definitions
 
         // The following constants are defined in Windows.h
-
-        private const int RIDEV_INPUTSINK = 0x00000100;
+        private const int RIDEV_APPKEYS = 0x00000400;
         private const int RIDEV_CAPTUREMOUSE = 0x00000200;
+        private const int RIDEV_DEVNOTIFY = 0x00002000;
+        private const int RIDEV_EXCLUDE = 0x00000010;
+        private const int RIDEV_EXINPUTSINK = 0x00001000;
+        private const int RIDEV_INPUTSINK = 0x00000100;
+        private const int RIDEV_NOHOTKEYS = 0x00000200;
         private const int RIDEV_NOLEGACY = 0x00000030;
+        private const int RIDEV_PAGEONLY = 0x00000020;
+        private const int RIDEV_REMOVE = 0x00000001;
+        
         
         private const int RID_INPUT = 0x10000003;
 
@@ -556,9 +563,11 @@ namespace MouseTester
                         RAWINPUT raw = (RAWINPUT)Marshal.PtrToStructure(buffer, typeof(RAWINPUT));                        
 
                         if (raw.header.dwType == RIM_TYPEMOUSE)
-                        {                            
+                        {
+
                             if (mevent != null)
                             {
+                                
                                 DeviceInfo dInfo = (DeviceInfo)deviceList[raw.header.hDevice];
                                 // if the mouse device is not registered yet, reEnumerate devices
                                 if (dInfo == null)
