@@ -3,8 +3,8 @@
  * pointing/transferfunctions/TransferFunction.h --
  *
  * Initial software
- * Authors: Géry Casiez, Nicolas Roussel
- * Copyright © Inria
+ * Authors: G?y Casiez, Nicolas Roussel
+ * Copyright ?Inria
  *
  * http://libpointing.org/
  *

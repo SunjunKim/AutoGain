@@ -18,8 +18,8 @@ libPointing::libPointing()
 
 void libPointing::init()
 {
-	input = PointingDevice::create("");
-	output = DisplayDevice::create("");
+	input = PointingDevice::create("any:?debugLevel=1");
+	output = DisplayDevice::create("any:?debugLevel=1");
 }
 
 void libPointing::setTranslateFunction(const char *fnURI)
