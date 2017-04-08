@@ -1,0 +1,12 @@
+system: Darwin/15.0.0 (Mac OS X 10.11 - 2015)
+
+# Created with libpointing
+libpointing-input: dummy:?hz=125&cpi=400
+
+# Obtained with libpointing
+libpointing-output: dummy:?bx=0&by=0&bw=1440&bh=900&w=331.005&h=206.878&hz=60
+
+functions: f1,f2,f3,f4,f5,f6,f7,f8,f9,f10
+function-aliases: 0,0.125,0.5,0.6875,0.875,1,1.5,2,2.5,3
+
+default-function: f4

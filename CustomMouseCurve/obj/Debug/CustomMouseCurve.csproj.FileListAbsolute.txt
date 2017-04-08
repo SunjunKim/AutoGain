@@ -29,3 +29,5 @@ C:\Users\선준\Documents\Visual Studio 2013\Projects\CustomMouseAcceleration\Cu
 C:\Users\선준\Documents\Visual Studio 2013\Projects\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.Form1.resources
 C:\Users\선준\Documents\Visual Studio 2013\Projects\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.Properties.Resources.resources
 C:\Users\선준\Documents\Visual Studio 2013\Projects\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.csproj.GenerateResource.Cache
+C:\Users\선준\Documents\Visual Studio 2013\Projects\CustomMouseAcceleration\CustomMouseCurve\bin\Debug\libPointingWrapper.dll
+C:\Users\선준\Documents\Visual Studio 2013\Projects\CustomMouseAcceleration\CustomMouseCurve\bin\Debug\libPointingWrapper.pdb

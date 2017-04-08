@@ -1,0 +1,14 @@
+system: Windows_7_8_10
+
+# Enhance pointer precision option turned on
+
+# Created with libpointing
+libpointing-input: dummy:?hz=125&cpi=400
+
+# Obtained with libpointing
+libpointing-output: dummy:?bx=0&by=0&bw=1440&bh=900&w=331.005&h=206.878&hz=60
+
+functions: f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11
+function-aliases: -5,-4,-3,-2,-1,0,1,2,3,4,5
+
+default-function: f6

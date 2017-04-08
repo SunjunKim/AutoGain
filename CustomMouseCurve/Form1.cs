@@ -11,6 +11,7 @@ using System.Threading;
 using System.Windows.Forms;
 using MouseTester;
 using Gma.System.MouseKeyHook;
+using libPointingWrapper;
 
 /*
  * MouseEvent and RawMouse codes are adopted and modified from MouseTester project (https://github.com/microe1/MouseTester) (MIT)
@@ -36,6 +37,7 @@ namespace CustomMouseCurve
         int unusedCounter = 0;
 
         MouseLogger logs = new MouseLogger(10);
+        libPointing lbP = new libPointing();
 
         void m_GlobalHook_MouseUp(object sender, MouseEventArgs e)
         {
@@ -72,7 +74,15 @@ namespace CustomMouseCurve
 
             // to record polling rate. 
             polling++;
-            
+
+            long timestampInt = (long)timestamp;
+            double mx, my;
+            unsafe
+            {
+                lbP.getTrasnalteValues(x, y, timestampInt, &mx, &my);
+            }
+
+            /*
             // timekeeping functions
             double timespan = double.MaxValue;
 
@@ -119,8 +129,7 @@ namespace CustomMouseCurve
                 p.y = 0;
             #endregion
 
-            Win32.POINT pt = Win32.GetCursorPosition();
-
+            
             if(Math.Sqrt(Math.Pow(p.x - pt.X,2)+Math.Pow(p.x - pt.X,2))>5)
             {
                 p.x = pt.X;
@@ -131,8 +140,13 @@ namespace CustomMouseCurve
                 // set new mouse pointer coordinate
                 p.x += xNew;
                 p.y += yNew;
-            }
-            
+            }*/
+
+            p.x += mx;
+            p.y += my;
+
+
+            Win32.POINT pt = Win32.GetCursorPosition();
             // move the mouse pointer
             Win32.setCursorAbsolute((int)p.x, (int)p.y);
             
@@ -156,10 +170,26 @@ namespace CustomMouseCurve
 
         }
 
+        public void setTransferFunction(libPointing library, string URI)
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes(URI);
+            unsafe
+            {
+                fixed (byte* bp = bytes)
+                {
+                    sbyte* sp = (sbyte*)bp;
+                    //SP is now what you want
+                    library.setTranslateFunction(sp);
+                }
+            }
+        }
+
         public Form1()
         {
             InitializeComponent();
-
+            lbP.init();
+            setTransferFunction(lbP, "sigmoid:?gmin=1&v1=0.05&v2=0.2&gmax=6&nosubpix=false");
+            
             // Code adopted from https://github.com/microe1/MouseTester/blob/master/MouseTester/MouseTester/Form1.cs
             #region Set process priority to the highest and RAWINPUT mouse
             try
@@ -197,11 +227,13 @@ namespace CustomMouseCurve
             p = new Point(currentPoint.X, currentPoint.Y);
 
             timer1.Start();
+            
         }
 
         
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
+            lbP.clear();
             notifyIcon1.Dispose();
         }
 
