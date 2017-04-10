@@ -57,6 +57,7 @@ namespace pointing {
 
   void FindHIDDevice(unsigned int vid, unsigned int pid, std::string &vendor, std::string &product)
   {
+	  /*
     // We will save all the found ids into the map
     // So that we can return the result immediately
     // If the required device ids were not found we enumerate all the HID devices
@@ -175,7 +176,7 @@ namespace pointing {
           ,vendorName
           ,productName
           );
-        */
+        * /
 
         // Save the results into the map in order not to search each time
         DeviceName dname;
@@ -194,6 +195,7 @@ namespace pointing {
       }
     }
     SetupDiDestroyDeviceInfoList(PnPHandle);
+	*/
   }
 
   bool getMouseNameFromDevice(HANDLE h, std::string &vendor, std::string &product, int *outVendorID, int *outProductID)

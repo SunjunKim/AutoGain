@@ -191,6 +191,7 @@ namespace CustomMouseCurve
             //e.g.) applying darwin-16 curve
             //setTransferFunction(lbP, "interp:curves/darwin-16");
             setTransferFunction(lbP, "interp:curves/darwin-16");
+            //setTransferFunction(lbP, "sigmoid:?debugLevel=2");
             
             // Code adopted from https://github.com/microe1/MouseTester/blob/master/MouseTester/MouseTester/Form1.cs
             #region Set process priority to the highest and RAWINPUT mouse
