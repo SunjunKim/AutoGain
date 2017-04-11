@@ -11,7 +11,7 @@ using System.Threading;
 using System.Windows.Forms;
 using MouseTester;
 using Gma.System.MouseKeyHook;
-using libPointingWrapper;
+//using libPointingWrapper;
 
 /*
  * MouseEvent and RawMouse codes are adopted and modified from MouseTester project (https://github.com/microe1/MouseTester) (MIT)
@@ -37,7 +37,7 @@ namespace CustomMouseCurve
         int unusedCounter = 0;
 
         MouseLogger logs = new MouseLogger(10);
-        libPointing lbP = new libPointing();
+        //libPointing lbP = new libPointing();
 
         void m_GlobalHook_MouseUp(object sender, MouseEventArgs e)
         {
@@ -75,14 +75,22 @@ namespace CustomMouseCurve
             // to record polling rate. 
             polling++;
 
+            /*
             long timestampInt = (long)timestamp;
             double mx, my;
             unsafe
             {
                 lbP.getTrasnalteValues(x, y, timestampInt, &mx, &my);
             }
+            
+            p.x = mx;
+            p.y = my;
+             
+            */
 
-            /*
+
+            Win32.POINT pt = Win32.GetCursorPosition();
+
             // timekeeping functions
             double timespan = double.MaxValue;
 
@@ -140,13 +148,8 @@ namespace CustomMouseCurve
                 // set new mouse pointer coordinate
                 p.x += xNew;
                 p.y += yNew;
-            }*/
+            }
 
-            p.x += mx;
-            p.y += my;
-
-
-            Win32.POINT pt = Win32.GetCursorPosition();
             // move the mouse pointer
             Win32.setCursorAbsolute((int)p.x, (int)p.y);
             
@@ -170,7 +173,7 @@ namespace CustomMouseCurve
 
         }
 
-        public void setTransferFunction(libPointing library, string URI)
+        /*public void setTransferFunction(libPointing library, string URI)
         {
             byte[] bytes = Encoding.ASCII.GetBytes(URI);
             unsafe
@@ -182,15 +185,16 @@ namespace CustomMouseCurve
                     library.setTranslateFunction(sp);
                 }
             }
-        }
+        }*/
 
         public Form1()
         {
+            AutoGain ag = new AutoGain();
             InitializeComponent();
-            lbP.init();
+            //lbP.init();
             //e.g.) applying darwin-16 curve
             //setTransferFunction(lbP, "interp:curves/darwin-16");
-            setTransferFunction(lbP, "interp:curves/darwin-16");
+            //setTransferFunction(lbP, "interp:curves/darwin-16");
             
             // Code adopted from https://github.com/microe1/MouseTester/blob/master/MouseTester/MouseTester/Form1.cs
             #region Set process priority to the highest and RAWINPUT mouse
@@ -229,13 +233,12 @@ namespace CustomMouseCurve
             p = new Point(currentPoint.X, currentPoint.Y);
 
             timer1.Start();
-            
         }
 
         
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            lbP.clear();
+            //lbP.clear();
             notifyIcon1.Dispose();
         }
 
@@ -342,6 +345,8 @@ namespace CustomMouseCurve
             this.y = y;
         }
     };
+
+    
 
     #region Mouse move related functions
     public class Win32
