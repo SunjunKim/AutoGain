@@ -5,54 +5,177 @@ using System.Text;
 using System.Threading.Tasks;
 using persistence1d;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
+using MouseTester;
+using System.IO;
 
 namespace CustomMouseCurve
 {
     class AutoGain
     {
+        // public properties
+        public string DeviceID { get { return this.deviceID; } }
+        public double HZ { get { return this.rate; } }
+        public double CPI { get { return this.cpi; } }
+        public double PPI { get { return this.ppi; } }
+        public Queue<MouseEventLog> Events { get { return this.events; } }
+        
+        // constants
         const int binCount = 128; // how many bins are there
         const double binSize = 0.01; // size of a bin unit: m/s
-        string deviceID { get; set; }
-        public string DeviceID { get { return this.deviceID; } }
-        double rate { get; set; } // mouse max. polling rate
-        double cpi { get; set; } // mouse counts per inch
+        
+        // internal variables
+        string deviceID;
+        double rate; // mouse max. polling rate
+        double cpi;  // mouse counts per inch
         double cpm { get { return cpi / 0.0254; } } // counts per meter, 0.0254 m = 1 inch
-        double ppi { get; set; } // screen resolution, pixels per inch
+        double ppi; // screen resolution, pixels per inch
         double ppm { get { return ppi / 0.0254; } } // pixels per meter, 0.0254 m = 1 inch
         double minTimespan { get { return 1000 / rate; } } // minimum timespan for given polling rate
 
-        private Queue<MouseEventLog> events;
-        public Queue<MouseEventLog> Events { get { return this.events; } }
-        private const double timewindow = 30; // unit: second
+        Queue<MouseEventLog> events;
+        const double timewindow = 30; // unit: second
         List<double> gainCurves = new List<double>(binCount);
+
+        // for Hz calculation
+        int reportCount = 0;
+        double lastTimeRecord = 0;
 
         /// <summary>
         /// AutoGain initializer
         /// </summary>
         /// <param name="deviceID">pointing device id</param>
-        /// <param name="Hz">pointing device refresh rate</param>
         /// <param name="cpi">pointing device counts per inch</param>
         /// <param name="dpi">display device dots per inch</param>
-        public AutoGain(string deviceID, double Hz = 125, double cpi = 800, double dpi = 72)
+        public AutoGain(string deviceID, double cpi = 800, double dpi = 72)
         {
             this.deviceID = deviceID;
-            this.rate = Hz;
-            this.cpi = cpi;
-            this.ppi = dpi;
-            
-            // gain curve initialize
-            loadDefaultCurve();
+
+            String logPath = getLogPath();
+            // get the latest log if exist
+            if(Directory.Exists(logPath))
+            {
+                // load the latest log.
+                loadAutoGain();
+            }
+            else
+            {
+                // assign a default values
+                this.rate = 125; // for a regular mouse device
+                this.cpi = cpi;
+                this.ppi = dpi;
+
+                // gain curve initialize
+                loadDefaultCurve();
+
+                saveAutoGain();
+            }
 
             // logger initialize
             int capacity = (int)(timewindow * 1000);
             events = new Queue<MouseEventLog>(capacity);
         }
 
+        public override string ToString()
+        {
+            String ret = "Information";
+            ret += "\r\nID   = " + this.deviceID;
+            ret += "\r\nHz   = " + this.HZ;
+            ret += "\r\nCPI  = " + this.CPI;
+            ret += "\r\nPPI  = " + this.PPI;
+            ret += "\r\n#cnt = " + events.Count;
+            return ret;
+        }
+
+        public String getLogPath()
+        {
+            String basePath = AppDomain.CurrentDomain.BaseDirectory;
+            String pathString = Path.Combine(basePath, this.deviceID);
+
+            return pathString;
+        }
+
+        public void saveAutoGain()
+        {
+            String pathString = getLogPath();
+            String filename = DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv";
+            String fileString = Path.Combine(pathString, filename);
+            
+            StreamWriter sw;
+            Directory.CreateDirectory(pathString);
+            sw = new StreamWriter(fileString, false, Encoding.UTF8);
+
+            // top five lines: deviceID / rate / cpi / ppi / # function values
+            sw.WriteLine(this.DeviceID);
+            sw.WriteLine(this.rate);
+            sw.WriteLine(this.cpi);
+            sw.WriteLine(this.ppi);
+            sw.WriteLine(gainCurves.Count);
+
+            // flush all values
+            for (int i = 0; i < gainCurves.Count; i++)
+            {
+                sw.WriteLine(gainCurves[i]);
+            }
+
+            sw.Flush();
+            sw.Close();
+        }
+
+        public bool loadAutoGain(string path)
+        {
+            if (!File.Exists(path))
+                return false;
+
+            string[] lines = File.ReadAllLines(path, Encoding.UTF8);
+
+            if (lines.Length <= 5)
+                return false;
+
+            // top five lines: deviceID / rate / cpi / ppi / # function values
+            bool success = true;
+            success &= double.TryParse(lines[1], out rate);
+            success &= double.TryParse(lines[2], out cpi);
+            success &= double.TryParse(lines[3], out ppi);
+
+            int lineCount = 0;
+            success &= int.TryParse(lines[4], out lineCount);
+
+            if (!success || lines.Length < 5 + lineCount)
+                return false;
+
+            for (int i = 5; i < lineCount + 5; i++)
+            {
+                double val = 0;
+                success &= double.TryParse(lines[i], out val);
+                if(success)
+                {
+                    gainCurves.Add(val);
+                }
+            }
+
+            if (!success)
+                return false;
+
+            Console.WriteLine("Successfully loaded {0}", path);
+            return true;
+        }
+
+        // if not filename specified, load the latest.
+        public bool loadAutoGain()
+        {
+            String path = getLogPath();
+            List<string> files = new List<string>(Directory.GetFiles(path, "*.csv"));
+            // get the latest one! (order by filename, the lastest one should have the top item in dictionary order).
+            return loadAutoGain(files.Max());
+        }
+
         // TODO: 지금은 constant지만, 나중에 여러 default curve를 로드할 수 있도록 수정.
         public void loadDefaultCurve()
         {
-            loadDefaultCurve("constant", 1.0);
+            loadDefaultCurve("constant", 10.0);
         }
+
         public void loadDefaultCurve(string type, double multiplier)
         {
             switch(type)
@@ -69,12 +192,55 @@ namespace CustomMouseCurve
         public void feedMouseEvent(MouseEventLog datapoint)
         {
             events.Enqueue(datapoint);
+            reportCount++;
 
+            // button clicked!!
+            if((datapoint.buttonflags & (RawMouse.RI_MOUSE_LEFT_BUTTON_DOWN | RawMouse.RI_MOUSE_RIGHT_BUTTON_DOWN)) != 0)
+            {
+                // update the gain curve
+                updateCurve();
+                // clear the queue
+                events.Clear();
+            }
+
+            // every 1 sec, calculate Hz.
+            if((datapoint.timestamp - lastTimeRecord) >= 1000)
+            {
+                if (reportCount > this.rate)
+                {
+                    this.rate = reportCount;
+                    Debug.WriteLine("Update report rate: {0}", this.rate);
+                }
+
+                lastTimeRecord = datapoint.timestamp;
+                reportCount = 0;
+            }
             // clear old datapoints over the timewindow.
-            while (events.Peek().timestamp < datapoint.timestamp - timewindow * 1000)
+            while (events.Count > 0 && events.Peek().timestamp < datapoint.timestamp - timewindow * 1000)
             {
                 events.Dequeue();
             }
+        }
+
+        /// <summary>
+        /// Update the gain curve using AutoGain algorithm
+        /// </summary>
+        private void updateCurve()
+        {
+            // TODO: Byungjoo ==> make this function.
+            
+            // get history from the queue
+            List<MouseEventLog> history = events.ToList<MouseEventLog>();
+            
+            // TODO: gain recalculation.
+            // check the [MouseEventLog] struct for detailed descriptions for [history] logs.
+            // for persistence1d, use: List<PairedExtrema> getPairedExtrema(List<double> inputData, double threshold)
+            saveAutoGain();
+            for(int i=0;i<gainCurves.Count;i++)
+            {
+                // update here gainCurves[i] = ??;
+            }
+
         }
 
         /// <summary>

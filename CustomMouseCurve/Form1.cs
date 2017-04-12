@@ -11,6 +11,7 @@ using System.Threading;
 using System.Windows.Forms;
 using MouseTester;
 using Gma.System.MouseKeyHook;
+using System.IO;
 //using libPointingWrapper;
 
 /*
@@ -30,22 +31,27 @@ namespace CustomMouseCurve
         Point p;                        // internally managed mouse pointer lication
         double lastEventTimestamp = 0;  // to calculate timespan between events
         long polling = 0;               // polling counter
-        
-        double accel = 1.0;             // acceleration parameter #1
-        double speed = 0.5;             // acceleration parameter #2
         bool doTranslate = true;        // true if it translate the mouse events
         int unusedCounter = 0;
 
-        AutoGain ag = new AutoGain("test", 125, 450, 163);
+        Dictionary<String, AutoGain> AGfunctions = new Dictionary<string, AutoGain>();
+
+        //AutoGain ag = new AutoGain("test", 4000, 95);
 
         private void mouseEventCallback(object RawMouse, MouseEvent meventinfo)
         {
             if (doTranslate)
             {
+                if(!AGfunctions.ContainsKey(meventinfo.source))
+                {
+                    AGfunctions.Add(meventinfo.source, new AutoGain(meventinfo.source));
+                    loadLogs();
+                }
                 translateFunction(meventinfo.buttonflags, meventinfo.lastx, meventinfo.lasty, meventinfo.ts, meventinfo.source);
             }
             unusedCounter = 0;
-            label3.Text = "Device = " + meventinfo.source;
+            labelDevice.Text = "Current: " + meventinfo.source;
+            textBoxInfo.Text = AGfunctions[meventinfo.source].ToString();
         }
 
         /// <summary>
@@ -64,6 +70,7 @@ namespace CustomMouseCurve
             // to record polling rate. 
             polling++;
 
+            AutoGain ag = AGfunctions[source];
             Win32.POINT pt = Win32.GetCursorPosition();
 
             // timekeeping functions
@@ -78,8 +85,8 @@ namespace CustomMouseCurve
             }
 
             double tx, ty;
+
             ag.getTranslatedValue(x, y, timespan, out tx, out ty);
-            
             
             // if preserved pointing and internal pointer is too far, reset the internal pointer
             if(Math.Sqrt(Math.Pow(p.x - pt.X,2)+Math.Pow(p.x - pt.X,2))>5)
@@ -170,6 +177,23 @@ namespace CustomMouseCurve
             timer1.Start();
         }
 
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            loadLogs();
+        }
+
+        private void loadLogs()
+        {
+            String basePath = AppDomain.CurrentDomain.BaseDirectory;
+            String[] logs = Directory.GetDirectories(basePath);
+
+            listBoxAGFunctions.Items.Clear();
+
+            foreach(String s in logs)
+            {
+                listBoxAGFunctions.Items.Add(Path.GetFileName(s));
+            }
+        }
         
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -199,22 +223,10 @@ namespace CustomMouseCurve
             Application.Exit();
         }
 
-        private void trackBar1_Scroll(object sender, EventArgs e)
-        {
-            accel = (double)trackBar1.Value / 10;
-            label1.Text = "Acceleration = " + accel;
-        }
-
-        private void trackBar2_Scroll(object sender, EventArgs e)
-        {
-            speed = (double)trackBar2.Value / 10;
-            label2.Text = "Speed = " + speed;
-        }
-
         private void timer1_Tick(object sender, EventArgs e)
         {
             unusedCounter++;
-            toolStripStatusLabel1.Text = "Rate: " + polling + " Hz / Log: " + ag.Events.Count ;
+            toolStripStatusLabel1.Text = "Rate: " + polling + " Hz";
 
             // if a mouse is unused until 60s, reset the counter;
             if(unusedCounter > 5)
@@ -261,9 +273,7 @@ namespace CustomMouseCurve
         }
         #endregion
 
-        private void button1_Click(object sender, EventArgs e)
-        {
-        }
+
     }
 
     public class Point
