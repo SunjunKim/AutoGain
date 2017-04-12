@@ -36,58 +36,33 @@ namespace CustomMouseCurve
         bool doTranslate = true;        // true if it translate the mouse events
         int unusedCounter = 0;
 
-        MouseLogger logs = new MouseLogger(10);
-        //libPointing lbP = new libPointing();
+        AutoGain ag = new AutoGain("test", 125, 450, 163);
 
-        void m_GlobalHook_MouseUp(object sender, MouseEventArgs e)
-        {
-            Debug.WriteLine("Mouse up " + e.Button);
-        }
-
-        void m_GlobalHook_MouseDown(object sender, MouseEventArgs e)
-        {
-            Debug.WriteLine("Mouse down " + e.Button);
-        }
-
-        private void readMouseEvent(object RawMouse, MouseEvent meventinfo)
+        private void mouseEventCallback(object RawMouse, MouseEvent meventinfo)
         {
             if (doTranslate)
             {
-                translateMouseMove(meventinfo.lastx, meventinfo.lasty * -1, meventinfo.ts, meventinfo.source);
+                translateFunction(meventinfo.buttonflags, meventinfo.lastx, meventinfo.lasty, meventinfo.ts, meventinfo.source);
             }
             unusedCounter = 0;
-            logs.Add(meventinfo);    
-
             label3.Text = "Device = " + meventinfo.source;
         }
 
         /// <summary>
         /// define a translate function for mouse movement
         /// </summary>
+        /// <param name="usButtonFlags">button flags</param>
         /// <param name="x">dx (relative mouse movement, negative: left / positive: right)</param>
         /// <param name="y">dy (relative mouse movement, negative: up / positive: down</param>
         /// <param name="timestamp">timestamp in millisecond, can be reset by calling mouse.StopWatchReset()</param>
         /// <param name="source">source device name. format: VID_PID (VID and PID are 4-digit hex numbers)</param>
-        private void translateMouseMove(int x, int y, double timestamp, string source)
+        private void translateFunction(ushort usButtonFlags, int x, int y, double timestamp, string source)
         {
+            // checking button press (e.g., LDn): (usFlags & MouseTester.RawMouse.MOUSE_LEFT_BUTTON_DOWN) != 0)
             // p.x, p.y <= internally managed pointer location (double)            
 
             // to record polling rate. 
             polling++;
-
-            /*
-            long timestampInt = (long)timestamp;
-            double mx, my;
-            unsafe
-            {
-                lbP.getTrasnalteValues(x, y, timestampInt, &mx, &my);
-            }
-            
-            p.x = mx;
-            p.y = my;
-             
-            */
-
 
             Win32.POINT pt = Win32.GetCursorPosition();
 
@@ -102,54 +77,23 @@ namespace CustomMouseCurve
                 lastEventTimestamp = timestamp;
             }
 
-            // timespan => time gap from the last event.
-            // dr = mouse displacement
-            // v = speed (pixel/ms)
-            double dr = Math.Sqrt(x * x + y * y);
+            double tx, ty;
+            ag.getTranslatedValue(x, y, timespan, out tx, out ty);
             
-            if (dr == 0 || timespan == 0)
-            {
-                // error handling (in case of div by zero)
-                return;
-            }
-
-            double v = dr / timespan;
             
-            // Example acceleration function http://stackoverflow.com/questions/8773037/how-to-simulate-mouse-acceleration
-            // custom acceleration function
-            #region gain function region
-            double a = speed;
-            double b = accel / 10;
-
-            double vNew = a * v + b * v * v;
-            double drNew = vNew * timespan;           
-
-            double xNew = x * drNew / dr;
-            double yNew = y * drNew / dr;
-
-            // error handling
-            if (double.IsNaN(xNew) || double.IsNaN(yNew))
-                return;
-
-            if (double.IsNaN(p.x))
-                p.x = 0;
-            if (double.IsNaN(p.y))
-                p.y = 0;
-            #endregion
-
-            
+            // if preserved pointing and internal pointer is too far, reset the internal pointer
             if(Math.Sqrt(Math.Pow(p.x - pt.X,2)+Math.Pow(p.x - pt.X,2))>5)
             {
                 p.x = pt.X;
                 p.y = pt.Y;
             }
-            else
-            {
-                // set new mouse pointer coordinate
-                p.x += xNew;
-                p.y += yNew;
-            }
+            
+            // set new mouse pointer coordinate
+            p.x += tx;
+            p.y += ty;
 
+            ag.feedMouseEvent(new AutoGain.MouseEventLog(usButtonFlags, x, y, tx, ty, timestamp, timespan, source));
+            
             // move the mouse pointer
             Win32.setCursorAbsolute((int)p.x, (int)p.y);
             
@@ -169,8 +113,6 @@ namespace CustomMouseCurve
                 p.x = pt.X;
                 p.y = pt.Y;
             }
-
-
         }
 
         /*public void setTransferFunction(libPointing library, string URI)
@@ -189,12 +131,7 @@ namespace CustomMouseCurve
 
         public Form1()
         {
-            AutoGain ag = new AutoGain();
             InitializeComponent();
-            //lbP.init();
-            //e.g.) applying darwin-16 curve
-            //setTransferFunction(lbP, "interp:curves/darwin-16");
-            //setTransferFunction(lbP, "interp:curves/darwin-16");
             
             // Code adopted from https://github.com/microe1/MouseTester/blob/master/MouseTester/MouseTester/Form1.cs
             #region Set process priority to the highest and RAWINPUT mouse
@@ -211,7 +148,7 @@ namespace CustomMouseCurve
 
             this.mouse.EnumerateDevices();
             this.mouse.RegisterRawInputMouse(Handle);
-            this.mouse.mevent += new RawMouse.MouseEventHandler(this.readMouseEvent);
+            this.mouse.mevent += new RawMouse.MouseEventHandler(this.mouseEventCallback);
             this.mouse.StopWatchReset();
             #endregion
 
@@ -219,8 +156,6 @@ namespace CustomMouseCurve
             #region Set mouse hook
             m_GlobalHook = Hook.GlobalEvents();
             m_GlobalHook.MouseMoveExt += m_GlobalHook_MouseMoveExt;
-            m_GlobalHook.MouseDown += m_GlobalHook_MouseDown;
-            m_GlobalHook.MouseUp += m_GlobalHook_MouseUp;
             #endregion
 
             // Program goes to tray
@@ -238,7 +173,6 @@ namespace CustomMouseCurve
         
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            //lbP.clear();
             notifyIcon1.Dispose();
         }
 
@@ -280,14 +214,13 @@ namespace CustomMouseCurve
         private void timer1_Tick(object sender, EventArgs e)
         {
             unusedCounter++;
-            toolStripStatusLabel1.Text = "Rate: " + polling + " Hz / Log: " + logs.Events.Count;
+            toolStripStatusLabel1.Text = "Rate: " + polling + " Hz / Log: " + ag.Events.Count ;
 
             // if a mouse is unused until 60s, reset the counter;
             if(unusedCounter > 5)
             {
                 unusedCounter = 0;
                 mouse.StopWatchReset();
-                logs.Clear();
             }
             polling = 0;
         }
@@ -330,7 +263,6 @@ namespace CustomMouseCurve
 
         private void button1_Click(object sender, EventArgs e)
         {
-            logs.Save("Test.csv");
         }
     }
 
@@ -348,7 +280,7 @@ namespace CustomMouseCurve
 
     
 
-    #region Mouse move related functions
+    #region System Mouse related functions (get/set cursor pos)
     public class Win32
     {
         [DllImport("User32.Dll")]

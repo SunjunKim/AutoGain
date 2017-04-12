@@ -9,10 +9,25 @@ using System.Collections;
 using Microsoft.Win32;
 using System.Text.RegularExpressions;
 
+
+
 namespace MouseTester
 {
     class RawMouse
     {
+        public static ushort RI_MOUSE_LEFT_BUTTON_DOWN = 0x0001;
+        public static ushort RI_MOUSE_LEFT_BUTTON_UP = 0x0002;
+        public static ushort RI_MOUSE_RIGHT_BUTTON_DOWN = 0x0004;
+        public static ushort RI_MOUSE_RIGHT_BUTTON_UP = 0x0008;
+        public static ushort RI_MOUSE_MIDDLE_BUTTON_DOWN = 0x0010;
+        public static ushort RI_MOUSE_MIDDLE_BUTTON_UP = 0x0020;
+        public static ushort RI_MOUSE_BUTTON_4_DOWN = 0x0040;
+        public static ushort RI_MOUSE_BUTTON_4_UP = 0x0080;
+        public static ushort RI_MOUSE_BUTTON_5_DOWN = 0x0100;
+        public static ushort RI_MOUSE_BUTTON_5_UP = 0x0200;
+        public static ushort RI_MOUSE_WHEEL = 0x0400;
+        public static ushort RI_MOUSE_HWHEEL = 0x0800;
+
         #region const definitions
 
         // The following constants are defined in Windows.h
@@ -26,7 +41,6 @@ namespace MouseTester
         private const int RIDEV_NOLEGACY = 0x00000030;
         private const int RIDEV_PAGEONLY = 0x00000020;
         private const int RIDEV_REMOVE = 0x00000001;
-        
         
         private const int RID_INPUT = 0x10000003;
 
@@ -44,13 +58,18 @@ namespace MouseTester
         private const int WM_KEYDOWN = 0x0100;
         private const int WM_SYSKEYDOWN = 0x0104;
         private const int WM_INPUT = 0x00FF;
+        private const int WM_INPUT_DEVICE_CHANGE = 0x00FE;
+
+        private const uint GIDC_ARRIVAL = 1;
+        private const uint GIDC_REMOVAL = 2;
+
         private const int VK_OEM_CLEAR = 0xFE;
         private const int VK_LAST_KEY = VK_OEM_CLEAR; // this is a made up value used as a sentinel
-        
-        private const int RI_MOUSE_LEFT_BUTTON_DOWN = 0x0001;
-        private const ushort RI_MOUSE_LEFT_BUTTON_UP = 0x0002;
-        private const int RI_MOUSE_RIGHT_BUTTON_DOWN = 0x0004;
-        private const ushort RI_MOUSE_RIGHT_BUTTON_UP = 0x0008;
+
+        private const ushort MOUSE_MOVE_RELATIVE = 0x00;
+        private const ushort MOUSE_MOVE_ABSOLUTE = 0x01;
+        private const ushort MOUSE_VIRTUAL_DESKTOP = 0x02;
+        private const ushort MOUSE_ATTRIBUTES_CHANGED = 0x04;
 
         #endregion const definitions 
 
@@ -70,7 +89,7 @@ namespace MouseTester
             public string vKey;
         }
 
-        #region Windows.h structure declarations
+        #region Windows.h structure declarations https://msdn.microsoft.com/en-us/library/windows/desktop/ff468895(v=vs.85).aspx
 
         // The following structures are defined in Windows.h
 
@@ -362,7 +381,7 @@ namespace MouseTester
             RAWINPUTDEVICE[] rid = new RAWINPUTDEVICE[1];
             rid[0].usUsagePage = 1;
             rid[0].usUsage = 2;
-            rid[0].dwFlags = RIDEV_INPUTSINK;
+            rid[0].dwFlags = RIDEV_INPUTSINK | RIDEV_DEVNOTIFY;
             rid[0].hwndTarget = hwnd;
 
             if (!RegisterRawInputDevices(rid, (uint)rid.Length, (uint)Marshal.SizeOf(rid[0])))
@@ -529,7 +548,6 @@ namespace MouseTester
 
         #endregion ReadReg( string item, ref bool isKeyboard )
 
-
         public void StopWatchReset()
         {
             this.stopWatch.Reset();
@@ -541,7 +559,21 @@ namespace MouseTester
 
         public void ProcessRawInput(Message m)
         {
-            if (m.Msg == WM_INPUT)
+            if(m.Msg == WM_INPUT_DEVICE_CHANGE)
+            {
+                switch((uint)m.WParam)
+                {
+                    case GIDC_ARRIVAL:
+                        Debug.WriteLine("New device attached: {0}", m.LParam);
+                        break;
+                    case GIDC_REMOVAL:
+                        Debug.WriteLine("A device removed: {0}", m.LParam);
+                        break;
+                }
+                Debug.WriteLine("ReEmunrate!");
+                EnumerateDevices();
+            }
+            else if (m.Msg == WM_INPUT)
             {
                 uint dwSize = 0;
 
@@ -571,13 +603,27 @@ namespace MouseTester
                                 DeviceInfo dInfo = (DeviceInfo)deviceList[raw.header.hDevice];
                                 // if the mouse device is not registered yet, reEnumerate devices
                                 if (dInfo == null)
-                                { 
+                                {
+                                    Debug.WriteLine("Invalid device info: ReEmunrate!");
                                     EnumerateDevices();
                                     dInfo = (DeviceInfo)deviceList[raw.header.hDevice];
                                 }
-                                  
-                                MouseEvent meventinfo = new MouseEvent(raw.mouse.buttonsStr.usButtonFlags, raw.mouse.lLastX, -raw.mouse.lLastY,
-                                                                       stopWatch.ElapsedTicks * 1e3 / Stopwatch.Frequency, dInfo.source);
+
+                                // TODO: Handle absolute type mouse device!
+                                if((raw.mouse.usFlags | MOUSE_MOVE_ABSOLUTE) != 0)
+                                {
+
+                                }
+
+                                MouseEvent meventinfo = 
+                                    new MouseEvent(
+                                        raw.mouse.buttonsStr.usButtonFlags, 
+                                        raw.mouse.lLastX, 
+                                        raw.mouse.lLastY,                              
+                                        stopWatch.ElapsedTicks * 1e3 / Stopwatch.Frequency,
+                                        dInfo.source
+                                        );
+
                                 mevent(this, meventinfo);
                             }
                             //Debug.WriteLine((stopWatch.ElapsedTicks * 1e3 / Stopwatch.Frequency).ToString() + ", " +

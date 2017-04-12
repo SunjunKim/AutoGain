@@ -38,7 +38,7 @@ struct TIdxAndData
 	int Idx;
 
 	///Vertex data value from the original Data vector sent as an argument to RunPersistence.
-	float Data;
+	double Data;
 };
 
 
@@ -58,7 +58,7 @@ struct TComponent
 	int MinIndex;
 
 	///The value of the Data[MinIndex].
-	float MinValue; //redundant, but makes life easier
+	double MinValue; //redundant, but makes life easier
 
 	///Set to true when a component is created. Once components are merged,
 	///the destroyed component Alive value is set to false. 
@@ -82,7 +82,7 @@ struct TPairedExtrema
 	///The persistence of the two extrema.
 	///Data[MaxIndex] - Data[MinIndex]		 
 	///Guaranteed to be >= 0.
-	float Persistence;	
+	double Persistence;	
 
 	bool operator<(const TPairedExtrema& other) const
 	{
@@ -125,7 +125,7 @@ public:
 
 		@param[in] InputData Vector of data to find features on, ordered according to its axis.
 	*/
-	bool RunPersistence(const std::vector<float>& InputData)
+	bool RunPersistence(const std::vector<double>& InputData)
 	{	
 		Data = InputData; 
 		Init();
@@ -169,7 +169,7 @@ public:
 		@param[in] threshold		Threshold value for pair persistence.
 		@param[in] matlabIndexing	Use Matlab indexing for printing.
 	*/	
-	void PrintResults(const float threshold = 0.0, const bool matlabIndexing = false) const
+	void PrintResults(const double threshold = 0.0, const bool matlabIndexing = false) const
 	{
 		if (threshold < 0)
 		{
@@ -203,7 +203,7 @@ public:
 		
 		@param[in] matlabIndexing	Set this to true to change all indices of features to Matlab's 1-indexing.
 	*/
-	bool GetPairedExtrema(std::vector<TPairedExtrema> & pairs, const float threshold = 0, const bool matlabIndexing = false) const
+	bool GetPairedExtrema(std::vector<TPairedExtrema> & pairs, const double threshold = 0, const bool matlabIndexing = false) const
 	{
 		//make sure the user does not use previous results that do not match the data
 		pairs.clear();
@@ -238,7 +238,7 @@ public:
 	@param[in]	threshold		Return only indices for pairs whose persistence is greater than or equal to threshold. 
 	@param[in]	matlabIndexing	Set this to true to change all indices to match Matlab's 1-indexing.
 */
-	bool GetExtremaIndices(std::vector<int> & min, std::vector<int> & max, const float threshold = 0, const bool matlabIndexing = false) const
+	bool GetExtremaIndices(std::vector<int> & min, std::vector<int> & max, const double threshold = 0, const bool matlabIndexing = false) const
 	{
 		//before doing anything, make sure the user does not use old results
 		min.clear();
@@ -284,7 +284,7 @@ public:
 		The global minimum does not get paired and is not returned 
 		via GetPairedExtrema and GetExtremaIndices.
 	*/
-	float GetGlobalMinimumValue() const
+	double GetGlobalMinimumValue() const
 	{
 		if (Components.empty()) return 0;
 
@@ -343,7 +343,7 @@ protected:
 	/*!
 		Contain a copy of the original input data.
 	*/
-	std::vector<float> Data;
+	std::vector<double> Data;
 	
 	
 	/*!
@@ -584,7 +584,7 @@ protected:
 	{
 		if (Data.size()==0) return;
 				
-		for (std::vector<float>::size_type i = 0; i != Data.size(); i++)
+		for (std::vector<double>::size_type i = 0; i != Data.size(); i++)
 		{
 			TIdxAndData dataidxpair; 
 
@@ -702,7 +702,7 @@ protected:
 		
 		@param[in]	threshold	Minimum persistence of features to be returned.		
 	*/
-	std::vector<TPairedExtrema>::const_iterator FilterByPersistence(const float threshold = 0) const
+	std::vector<TPairedExtrema>::const_iterator FilterByPersistence(const double threshold = 0) const
 	{		
 		if (threshold == 0 || threshold < 0) return PairedExtrema.begin();
 

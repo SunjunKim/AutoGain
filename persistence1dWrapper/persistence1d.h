@@ -17,22 +17,22 @@ namespace persistence1d {
 		virtual ~p1d();
 
 
-		bool RunPersistence(Collections::Generic::List<float>^ InputData);
+		bool RunPersistence(Collections::Generic::List<double>^ InputData);
 		
 		bool GetPairedExtrema(
 			Collections::Generic::List<int>^ mins,
 			Collections::Generic::List<int>^ maxs,
-			Collections::Generic::List<float>^ persistents);
+			Collections::Generic::List<double>^ persistents);
 		bool GetPairedExtrema(
 			Collections::Generic::List<int>^ mins, 
 			Collections::Generic::List<int>^ maxs, 
-			Collections::Generic::List<float>^ persistents,
-			float threshold	);
+			Collections::Generic::List<double>^ persistents,
+			double threshold	);
 		bool GetPairedExtrema(
 			Collections::Generic::List<int>^ mins,
 			Collections::Generic::List<int>^ maxs,
-			Collections::Generic::List<float>^ persistents, 
-			float threshold, 
+			Collections::Generic::List<double>^ persistents,
+			double threshold, 
 			bool matlabIndexing);
 		
 
@@ -43,18 +43,18 @@ namespace persistence1d {
 		bool GetExtremaIndices(
 			Collections::Generic::List<int>^ min,
 			Collections::Generic::List<int>^ max,
-			float threshold);
+			double threshold);
 
 		bool GetExtremaIndices(
 			Collections::Generic::List<int>^ min,
 			Collections::Generic::List<int>^ max,
-			float threshold,
+			double threshold,
 			bool matlabIndexing);
 
 		int GetGlobalMinimumIndex();
 		int GetGlobalMinimumIndex(const bool matlabIndexing);
 
-		float GetGlobalMinimumValue();
+		double GetGlobalMinimumValue();
 
 		bool VerifyResults();
 	};

@@ -15,10 +15,10 @@ namespace persistence1d
 		delete p;
 	}
 
-	bool p1d::RunPersistence(Collections::Generic::List<float>^ InputData)
+	bool p1d::RunPersistence(Collections::Generic::List<double>^ InputData)
 	{
-		std::vector<float> vec;
-		for each (float i in InputData)
+		std::vector<double> vec;
+		for each (double i in InputData)
 		{
 			vec.push_back(i);
 		}
@@ -27,22 +27,22 @@ namespace persistence1d
 
 	bool p1d::GetPairedExtrema(Collections::Generic::List<int>^ mins,
 		Collections::Generic::List<int>^ maxs,
-		Collections::Generic::List<float>^ persistents)
+		Collections::Generic::List<double>^ persistents)
 	{
 		return this->GetPairedExtrema(mins, maxs, persistents, 0, false);
 	}
 	bool p1d::GetPairedExtrema(Collections::Generic::List<int>^ mins,
 		Collections::Generic::List<int>^ maxs,
-		Collections::Generic::List<float>^ persistents,
-		float threshold)
+		Collections::Generic::List<double>^ persistents,
+		double threshold)
 	{
 		return this->GetPairedExtrema(mins, maxs, persistents, threshold, false);
 	}
 
 	bool p1d::GetPairedExtrema(Collections::Generic::List<int>^ mins,
 		Collections::Generic::List<int>^ maxs,
-		Collections::Generic::List<float>^ persistents,
-		float threshold,
+		Collections::Generic::List<double>^ persistents,
+		double threshold,
 		bool matlabIndexing)
 	{
 		std::vector<TPairedExtrema> vec;
@@ -76,7 +76,7 @@ namespace persistence1d
 	bool p1d::GetExtremaIndices(
 		Collections::Generic::List<int>^ min,
 		Collections::Generic::List<int>^ max,
-		float threshold)
+		double threshold)
 	{
 		return this->GetExtremaIndices(min, max, threshold, false);
 	}
@@ -84,7 +84,7 @@ namespace persistence1d
 	bool p1d::GetExtremaIndices(
 		Collections::Generic::List<int>^ min,
 		Collections::Generic::List<int>^ max,
-		float threshold,
+		double threshold,
 		bool matlabIndexing)
 	{
 		std::vector<int> minvec;
@@ -117,7 +117,7 @@ namespace persistence1d
 		return p->GetGlobalMinimumIndex(matlabIndexing);
 	}
 
-	float p1d::GetGlobalMinimumValue()
+	double p1d::GetGlobalMinimumValue()
 	{
 		return p->GetGlobalMinimumValue();
 	}
