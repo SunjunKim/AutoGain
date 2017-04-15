@@ -40,7 +40,8 @@ namespace CustomMouseCurve
         Dictionary<String, AutoGain> AGfunctions = new Dictionary<string, AutoGain>();
         AutoGain currentAG = null;
 
-        //AutoGain ag = new AutoGain("test", 4000, 95);
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool SystemParametersInfo(int uiAction, int uiParam, IntPtr pvParam, int fWinIni);
 
         private void mouseEventCallback(object RawMouse, MouseEvent meventinfo)
         {
@@ -113,6 +114,7 @@ namespace CustomMouseCurve
             p.x += tx;
             p.y += ty;
 
+            ag.doLearning = checkBoxLearninig.Checked;
             ag.feedMouseEvent(new AutoGain.MouseEventLog(usButtonFlags, x, y, tx, ty, usTimestamp, usTimestamp/1000.0, timespan, source));
             
             // move the mouse pointer
@@ -136,11 +138,33 @@ namespace CustomMouseCurve
             }
         }
 
+        // get system mouse setting :: speed tick (1~20) / Enhanced Pointer Precision option val)
+        void getMouseParameters(out int speed, out bool enhancedPointerPrecision)
+        {
+            speed = SystemInformation.MouseSpeed;
+            enhancedPointerPrecision = false;
+
+            const int SPI_GETMOUSE = 0x03;
+
+            Int32[] mouseParams = new Int32[3];
+            IntPtr unmanagedPointer = Marshal.AllocHGlobal(mouseParams.Length * sizeof(Int32));
+
+            // Get the current values.
+            bool result = SystemParametersInfo(SPI_GETMOUSE, 0, unmanagedPointer, 0);
+            Marshal.Copy(unmanagedPointer, mouseParams, 0, mouseParams.Length);
+            Marshal.FreeHGlobal(unmanagedPointer);
+
+            if(result)
+            {
+                if (mouseParams[2] != 0)
+                    enhancedPointerPrecision = true;
+            }
+        }
+
         public Form1()
         {
             InitializeComponent();
 
-            
             // get system dpi setup
             PointF dpi = PointF.Empty;
             using (Graphics g = this.CreateGraphics())
@@ -149,9 +173,7 @@ namespace CustomMouseCurve
                 dpi.Y = g.DpiY;
             }
             currentDPI = Math.Sqrt(dpi.X * dpi.X + dpi.Y * dpi.Y) / Math.Sqrt(2);
-            Debug.WriteLine("current monitor DPI : {0}", currentDPI);
-            Debug.WriteLine(double.MaxValue);
-
+            
             // Code adopted from https://github.com/microe1/MouseTester/blob/master/MouseTester/MouseTester/Form1.cs
             #region Set process priority to the highest and RAWINPUT mouse
             try
@@ -187,6 +209,14 @@ namespace CustomMouseCurve
             p = new Point(currentPoint.X, currentPoint.Y);
 
             timer1.Start();
+
+            int mouseSpeed;
+            bool epp;
+            getMouseParameters(out mouseSpeed, out epp);
+
+            // tick  1:1 - 2:2 - 3:4 - 4:6 - 5:8 - 6:10 - 7:12 - 8:14 - 9:16 - 10:18 - 11:20
+            Debug.WriteLine("Current monitor DPI : {0}", currentDPI);
+            Debug.WriteLine("Current mouse setting: speed={0} / epp={1}", mouseSpeed, epp);
         }
 
         private void Form1_Load(object sender, EventArgs e)

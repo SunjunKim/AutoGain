@@ -30,8 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.종료ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.notifyIcon1 = new System.Windows.Forms.NotifyIcon(this.components);
@@ -49,6 +49,7 @@
             this.buttonReset = new System.Windows.Forms.Button();
             this.chartGainCurve = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.trackBar1 = new System.Windows.Forms.TrackBar();
+            this.checkBoxLearninig = new System.Windows.Forms.CheckBox();
             this.contextMenuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
@@ -160,6 +161,7 @@
             this.flowLayoutPanel1.Controls.Add(this.textBoxInfo);
             this.flowLayoutPanel1.Controls.Add(this.buttonSetup);
             this.flowLayoutPanel1.Controls.Add(this.buttonReset);
+            this.flowLayoutPanel1.Controls.Add(this.checkBoxLearninig);
             this.flowLayoutPanel1.Location = new System.Drawing.Point(5, 0);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Padding = new System.Windows.Forms.Padding(0, 10, 0, 10);
@@ -174,12 +176,12 @@
             this.textBoxInfo.Name = "textBoxInfo";
             this.textBoxInfo.ReadOnly = true;
             this.textBoxInfo.ShortcutsEnabled = false;
-            this.textBoxInfo.Size = new System.Drawing.Size(145, 100);
+            this.textBoxInfo.Size = new System.Drawing.Size(145, 131);
             this.textBoxInfo.TabIndex = 7;
             // 
             // buttonSetup
             // 
-            this.buttonSetup.Location = new System.Drawing.Point(2, 132);
+            this.buttonSetup.Location = new System.Drawing.Point(2, 163);
             this.buttonSetup.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.buttonSetup.Name = "buttonSetup";
             this.buttonSetup.Size = new System.Drawing.Size(65, 26);
@@ -190,7 +192,7 @@
             // 
             // buttonReset
             // 
-            this.buttonReset.Location = new System.Drawing.Point(71, 132);
+            this.buttonReset.Location = new System.Drawing.Point(71, 163);
             this.buttonReset.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.buttonReset.Name = "buttonReset";
             this.buttonReset.Size = new System.Drawing.Size(74, 26);
@@ -203,16 +205,16 @@
             this.chartGainCurve.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            chartArea1.AxisX.Minimum = 0D;
-            chartArea1.AxisY.Minimum = 0D;
-            chartArea1.Name = "ChartArea1";
-            this.chartGainCurve.ChartAreas.Add(chartArea1);
+            chartArea3.AxisX.Minimum = 0D;
+            chartArea3.AxisY.Minimum = 0D;
+            chartArea3.Name = "ChartArea1";
+            this.chartGainCurve.ChartAreas.Add(chartArea3);
             this.chartGainCurve.Location = new System.Drawing.Point(248, 10);
             this.chartGainCurve.Name = "chartGainCurve";
-            series1.ChartArea = "ChartArea1";
-            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series1.Name = "seriesGainCurve";
-            this.chartGainCurve.Series.Add(series1);
+            series3.ChartArea = "ChartArea1";
+            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series3.Name = "seriesGainCurve";
+            this.chartGainCurve.Series.Add(series3);
             this.chartGainCurve.Size = new System.Drawing.Size(324, 181);
             this.chartGainCurve.TabIndex = 9;
             this.chartGainCurve.Text = "chartCurveVisualizer";
@@ -225,6 +227,18 @@
             this.trackBar1.Name = "trackBar1";
             this.trackBar1.Size = new System.Drawing.Size(324, 45);
             this.trackBar1.TabIndex = 10;
+            // 
+            // checkBoxLearninig
+            // 
+            this.checkBoxLearninig.AutoSize = true;
+            this.checkBoxLearninig.Checked = true;
+            this.checkBoxLearninig.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBoxLearninig.Location = new System.Drawing.Point(3, 194);
+            this.checkBoxLearninig.Name = "checkBoxLearninig";
+            this.checkBoxLearninig.Size = new System.Drawing.Size(73, 16);
+            this.checkBoxLearninig.TabIndex = 10;
+            this.checkBoxLearninig.Text = "Learning";
+            this.checkBoxLearninig.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
@@ -274,6 +288,7 @@
         private System.Windows.Forms.TrackBar trackBar1;
         private System.Windows.Forms.Button buttonSetup;
         private System.Windows.Forms.Button buttonReset;
+        private System.Windows.Forms.CheckBox checkBoxLearninig;
     }
 }
 

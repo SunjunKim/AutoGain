@@ -22,10 +22,11 @@ namespace CustomMouseCurve
         public double PPI { get { return this.ppi; } }
         public Queue<MouseEventLog> Events { get { return this.events; } }
         public List<double> curve { get { return gainCurves; } }
+        public bool doLearning = false;
         
         // constants
         const int binCount = 128; // how many bins are there
-        const double binSize = 0.0005; // size of a bin unit: m/s 0.0005 => 0.5mm/s motor movement
+        const double binSize = 0.005; // size of a bin unit: m/s 0.01 => 1cm/s motor movement
         
         // internal variables
         string deviceID;
@@ -39,8 +40,10 @@ namespace CustomMouseCurve
         Queue<MouseEventLog> events;
         const double timewindow = 10; // unit: second
         List<double> gainCurves = new List<double>(binCount);
-        int max_number_submovement = 3;
-        double gain_change_rate = 0.00001;
+        int max_number_submovement = 3;        
+        double gain_change_rate = 0.0001;
+
+        double lastSpeed = 0;
 
         //Aim point estimation
         double sub_aim_point = 0.95;
@@ -53,6 +56,7 @@ namespace CustomMouseCurve
         // for Hz calculation
         int reportCounter = 0;
         Timer hzCalculateTimer;
+
 
         /// <summary>
         /// AutoGain initializer
@@ -97,110 +101,7 @@ namespace CustomMouseCurve
             events = new Queue<MouseEventLog>(capacity);
         }
 
-        void hzCalculateTimer_Tick(object sender, EventArgs e)
-        {
-            // every 1 sec, calculate Hz.
-            if (reportCounter > this.rate)
-            {
-                this.rate = reportCounter;
-                Debug.WriteLine("Update report rate: {0}", this.rate);
-            }
-            reportCounter = 0;
-        }
 
-        public override string ToString()
-        {
-            String ret = "Information";
-            ret += "\r\nID   = " + this.deviceID;
-            ret += "\r\nHz   = " + this.HZ;
-            ret += "\r\nCPI  = " + this.CPI;
-            ret += "\r\nPPI  = " + this.PPI;
-            ret += "\r\n#cnt = " + events.Count;
-            return ret;
-        }
-
-        public String getLogPath()
-        {
-            String basePath = AppDomain.CurrentDomain.BaseDirectory;
-            String pathString = Path.Combine(basePath, this.deviceID);
-
-            return pathString;
-        }
-
-        public void saveAutoGain()
-        {
-            String pathString = getLogPath();
-            String filename = DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv";
-            String fileString = Path.Combine(pathString, filename);
-            
-            StreamWriter sw;
-            Directory.CreateDirectory(pathString);
-            sw = new StreamWriter(fileString, false, Encoding.UTF8);
-
-            // top five lines: deviceID / rate / cpi / ppi / # function values
-            sw.WriteLine(this.DeviceID);
-            sw.WriteLine(this.rate);
-            sw.WriteLine(this.cpi);
-            sw.WriteLine(this.ppi);
-            sw.WriteLine(gainCurves.Count);
-
-            // flush all values
-            for (int i = 0; i < gainCurves.Count; i++)
-            {
-                sw.WriteLine(gainCurves[i]);
-            }
-
-            sw.Flush();
-            sw.Close();
-        }
-
-        public bool loadAutoGain(string path)
-        {
-            if (!File.Exists(path))
-                return false;
-
-            string[] lines = File.ReadAllLines(path, Encoding.UTF8);
-
-            if (lines.Length <= 5)
-                return false;
-
-            // top five lines: deviceID / rate / cpi / ppi / # function values
-            bool success = true;
-            success &= double.TryParse(lines[1], out rate);
-            success &= double.TryParse(lines[2], out cpi);
-            success &= double.TryParse(lines[3], out ppi);
-
-            int lineCount = 0;
-            success &= int.TryParse(lines[4], out lineCount);
-
-            if (!success || lines.Length < 5 + lineCount)
-                return false;
-
-            for (int i = 5; i < lineCount + 5; i++)
-            {
-                double val = 0;
-                success &= double.TryParse(lines[i], out val);
-                if(success)
-                {
-                    gainCurves.Add(val);
-                }
-            }
-
-            if (!success)
-                return false;
-
-            Debug.WriteLine("Successfully loaded {0}", path);
-            return true;
-        }
-
-        // if not filename specified, load the latest.
-        public bool loadAutoGain()
-        {
-            String path = getLogPath();
-            List<string> files = new List<string>(Directory.GetFiles(path, "*.csv"));
-            // get the latest one! (order by filename, the lastest one should have the top item in dictionary order).
-            return loadAutoGain(files.Max());
-        }
 
         // TODO: 지금은 constant지만, 나중에 여러 default curve를 로드할 수 있도록 수정.
         public void loadDefaultCurve()
@@ -210,7 +111,7 @@ namespace CustomMouseCurve
 
         public void loadDefaultCurve(string type, double multiplier)
         {
-            switch(type)
+            switch (type)
             {
                 case "constant":
                     for (int i = 0; i < binCount; i++)
@@ -230,12 +131,14 @@ namespace CustomMouseCurve
             //if((datapoint.buttonflags & (RawMouse.RI_MOUSE_LEFT_BUTTON_DOWN | RawMouse.RI_MOUSE_RIGHT_BUTTON_DOWN)) != 0)
             if ((datapoint.buttonflags & RawMouse.RI_MOUSE_LEFT_BUTTON_DOWN) != 0)
             {
+                lastSpeed = 0;
                 // update the gain curve
-                updateCurve();
+                if (doLearning)
+                    updateCurve();
                 // clear the queue
                 events.Clear();
             }
-            
+
             // clear old datapoints over the timewindow.
             while (events.Count > 0 && (events.Peek().usTimestamp < datapoint.usTimestamp - timewindow * 1e6 || events.Peek().timestamp > datapoint.timestamp))
             {
@@ -244,12 +147,39 @@ namespace CustomMouseCurve
         }
 
         /// <summary>
+        /// translate mouse movement
+        /// </summary>
+        /// <param name="dx"></param>
+        /// <param name="dy"></param>
+        /// <param name="timespan"></param>
+        /// <param name="tx"></param>
+        /// <param name="ty"></param>
+        /// <returns></returns>
+        public bool getTranslatedValue(double dx, double dy, double timespan, out double tx, out double ty)
+        {
+            timespan = Math.Max(minTimespan, timespan); // preventing too fast polling because of a delayed event call
+
+            double magnitude = Math.Sqrt(dx * dx + dy * dy) / cpm; // calculated unit: meter
+            double speed = magnitude / (timespan / 1000);  // unit: m/s
+
+            if (lastSpeed < speed)
+                lastSpeed = speed;
+
+            double CDGain = ppi / cpi;
+
+            double gain = getInterpolatedValue(speed / binSize, gainCurves) * CDGain;
+
+            tx = dx * gain;
+            ty = dy * gain;
+
+            return true;
+        }
+
+        /// <summary>
         /// Update the gain curve using AutoGain algorithm
         /// </summary>
         private void updateCurve()
         {
-            // TODO: Byungjoo ==> make this function.
-
             // get history from the queue
             List<MouseEventLog> history = events.ToList<MouseEventLog>();
 
@@ -267,6 +197,7 @@ namespace CustomMouseCurve
             {
                 sx_temp += displacement.systemDX;
                 sy_temp += displacement.systemDY;
+                // TODO: system DX/DY 는 ppi (스크린 pixel per meter) 에 영향을 받는 움직임인데, 이걸 왜 cpm (마우스의 counts per meter) 으로 나누죠?
                 speeds.Add(Math.Sqrt(displacement.systemDX * displacement.systemDX + displacement.systemDY * displacement.systemDY) / cpm / (displacement.timespan / 1000));
                 timespans.Add(displacement.timespan);
                 sx_sum.Add(sx_temp);
@@ -510,7 +441,7 @@ namespace CustomMouseCurve
                                 int middle = (int)Math.Round(current_speed / binSize);
                                 //Console.WriteLine(middle);
                                 middle = Math.Min(middle, speedAppearingCounts.Count - 1);
-                                   
+
                                 speedAppearingCounts[middle] = speedAppearingCounts[middle] + 1;
                             }
                         }
@@ -582,32 +513,114 @@ namespace CustomMouseCurve
         }
 
 
-        /// <summary>
-        /// translate mouse movement
-        /// </summary>
-        /// <param name="dx"></param>
-        /// <param name="dy"></param>
-        /// <param name="timespan"></param>
-        /// <param name="tx"></param>
-        /// <param name="ty"></param>
-        /// <returns></returns>
-        public bool getTranslatedValue(double dx, double dy, double timespan, out double tx, out double ty)
+
+        void hzCalculateTimer_Tick(object sender, EventArgs e)
         {
-            timespan = Math.Max(minTimespan, timespan); // preventing too fast polling because of a delayed event call
-                
-            double magnitude = Math.Sqrt(dx * dx + dy * dy) / cpm; // calculated unit: meter
-            double speed = magnitude / (timespan / 1000);  // unit: m/s
-            //Console.WriteLine(speed);
+            // every 1 sec, calculate Hz.
+            if (reportCounter > this.rate)
+            {
+                this.rate = reportCounter;
+                Debug.WriteLine("Update report rate: {0}", this.rate);
+            }
+            reportCounter = 0;
+        }
 
-            double CDGain = ppi / cpi;
+        public override string ToString()
+        {
+            String ret = "Information";
+            ret += "\r\nID   = " + this.deviceID;
+            ret += "\r\nHz   = " + this.HZ;
+            ret += "\r\nCPI  = " + this.CPI;
+            ret += "\r\nPPI  = " + this.PPI;
+            //ret += "\r\n#cnt = " + events.Count;
+            ret += "\r\nspd  = " + Math.Round(lastSpeed, 5) + " m/s";
+            ret += "\r\nbin  = " + Math.Round(lastSpeed / binSize, 2) + "th";
+            return ret;
+        }
 
-            double gain = getInterpolatedValue(speed / binSize, gainCurves) * CDGain;
+        public String getLogPath()
+        {
+            String basePath = AppDomain.CurrentDomain.BaseDirectory;
+            String pathString = Path.Combine(basePath, this.deviceID);
 
-            tx = dx * gain;
-            ty = dy * gain;
+            return pathString;
+        }
 
+        public void saveAutoGain()
+        {
+            String pathString = getLogPath();
+            String filename = DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv";
+            String fileString = Path.Combine(pathString, filename);
+            
+            StreamWriter sw;
+            Directory.CreateDirectory(pathString);
+            sw = new StreamWriter(fileString, false, Encoding.UTF8);
+
+            // top five lines: deviceID / rate / cpi / ppi / # function values
+            sw.WriteLine(this.DeviceID);
+            sw.WriteLine(this.rate);
+            sw.WriteLine(this.cpi);
+            sw.WriteLine(this.ppi);
+            sw.WriteLine(gainCurves.Count);
+
+            // flush all values
+            for (int i = 0; i < gainCurves.Count; i++)
+            {
+                sw.WriteLine(gainCurves[i]);
+            }
+
+            sw.Flush();
+            sw.Close();
+        }
+
+        public bool loadAutoGain(string path)
+        {
+            if (!File.Exists(path))
+                return false;
+
+            string[] lines = File.ReadAllLines(path, Encoding.UTF8);
+
+            if (lines.Length <= 5)
+                return false;
+
+            // top five lines: deviceID / rate / cpi / ppi / # function values
+            bool success = true;
+            success &= double.TryParse(lines[1], out rate);
+            success &= double.TryParse(lines[2], out cpi);
+            success &= double.TryParse(lines[3], out ppi);
+
+            int lineCount = 0;
+            success &= int.TryParse(lines[4], out lineCount);
+
+            if (!success || lines.Length < 5 + lineCount)
+                return false;
+
+            for (int i = 5; i < lineCount + 5; i++)
+            {
+                double val = 0;
+                success &= double.TryParse(lines[i], out val);
+                if(success)
+                {
+                    gainCurves.Add(val);
+                }
+            }
+
+            if (!success)
+                return false;
+
+            Debug.WriteLine("Successfully loaded {0}", path);
             return true;
         }
+
+        // if not filename specified, load the latest.
+        public bool loadAutoGain()
+        {
+            String path = getLogPath();
+            List<string> files = new List<string>(Directory.GetFiles(path, "*.csv"));
+            // get the latest one! (order by filename, the lastest one should have the top item in dictionary order).
+            return loadAutoGain(files.Max());
+        }
+
 
         // interpolation
         public static double getInterpolatedValue(double index, List<double> list)
