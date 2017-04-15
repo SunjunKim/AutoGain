@@ -10,15 +10,15 @@ namespace MouseTester
         public ushort buttonflags;
         public int lastx;
         public int lasty;
-        public double ts;
+        public long usTimestamp;
         public string source;
 
-        public MouseEvent(ushort buttonflags, int lastx, int lasty, double ts, string source)
+        public MouseEvent(ushort buttonflags, int lastx, int lasty, long usTimestamp, string source)
         {
             this.buttonflags = buttonflags;
             this.lastx = lastx;
             this.lasty = lasty;
-            this.ts = ts;
+            this.usTimestamp = usTimestamp;
             this.source = source;
         }
     }

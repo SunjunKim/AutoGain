@@ -30,7 +30,7 @@ namespace CustomMouseCurve
         private IKeyboardMouseEvents m_GlobalHook;      // Mouse hook (to prevent mouse movement and detect clicks)
 
         Point p;                        // internally managed mouse pointer lication
-        double lastEventTimestamp = 0;  // to calculate timespan between events
+        long lastEventTimestamp = 0;    // to calculate timespan between events
         long polling = 0;               // polling counter
         bool doTranslate = true;        // true if it translate the mouse events
         int unusedCounter = 0;
@@ -60,7 +60,7 @@ namespace CustomMouseCurve
                     AGfunctions.Add(meventinfo.source, new AutoGain(meventinfo.source, currentDPI));
                     loadLogs();
                 }
-                translateFunction(meventinfo.buttonflags, meventinfo.lastx, meventinfo.lasty, meventinfo.ts, meventinfo.source);
+                translateFunction(meventinfo.buttonflags, meventinfo.lastx, meventinfo.lasty, meventinfo.usTimestamp, meventinfo.source);
             }
             unusedCounter = 0;
             labelDevice.Text = "Current: " + meventinfo.source;
@@ -74,9 +74,9 @@ namespace CustomMouseCurve
         /// <param name="usButtonFlags">button flags</param>
         /// <param name="x">dx (relative mouse movement, negative: left / positive: right)</param>
         /// <param name="y">dy (relative mouse movement, negative: up / positive: down</param>
-        /// <param name="timestamp">timestamp in millisecond, can be reset by calling mouse.StopWatchReset()</param>
+        /// <param name="usTimestamp">timestamp in microsecond, can be reset by calling mouse.StopWatchReset()</param>
         /// <param name="source">source device name. format: VID_PID (VID and PID are 4-digit hex numbers)</param>
-        private void translateFunction(ushort usButtonFlags, int x, int y, double timestamp, string source)
+        private void translateFunction(ushort usButtonFlags, int x, int y, long usTimestamp, string source)
         {
             // checking button press (e.g., LDn): (usFlags & MouseTester.RawMouse.MOUSE_LEFT_BUTTON_DOWN) != 0)
             // p.x, p.y <= internally managed pointer location (double)            
@@ -91,11 +91,11 @@ namespace CustomMouseCurve
             double timespan = double.MaxValue;
 
             if (lastEventTimestamp == 0)
-                lastEventTimestamp = timestamp;
+                lastEventTimestamp = usTimestamp;
             else
             {
-                timespan = timestamp - lastEventTimestamp;
-                lastEventTimestamp = timestamp;
+                timespan = (usTimestamp - lastEventTimestamp) / 1000.0;
+                lastEventTimestamp = usTimestamp;
             }
 
             double tx, ty;
@@ -113,7 +113,7 @@ namespace CustomMouseCurve
             p.x += tx;
             p.y += ty;
 
-            ag.feedMouseEvent(new AutoGain.MouseEventLog(usButtonFlags, x, y, tx, ty, timestamp, timespan, source));
+            ag.feedMouseEvent(new AutoGain.MouseEventLog(usButtonFlags, x, y, tx, ty, usTimestamp, usTimestamp/1000.0, timespan, source));
             
             // move the mouse pointer
             Win32.setCursorAbsolute((int)p.x, (int)p.y);
@@ -140,6 +140,7 @@ namespace CustomMouseCurve
         {
             InitializeComponent();
 
+            
             // get system dpi setup
             PointF dpi = PointF.Empty;
             using (Graphics g = this.CreateGraphics())
@@ -149,7 +150,8 @@ namespace CustomMouseCurve
             }
             currentDPI = Math.Sqrt(dpi.X * dpi.X + dpi.Y * dpi.Y) / Math.Sqrt(2);
             Debug.WriteLine("current monitor DPI : {0}", currentDPI);
-            
+            Debug.WriteLine(double.MaxValue);
+
             // Code adopted from https://github.com/microe1/MouseTester/blob/master/MouseTester/MouseTester/Form1.cs
             #region Set process priority to the highest and RAWINPUT mouse
             try
@@ -251,15 +253,17 @@ namespace CustomMouseCurve
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            unusedCounter++;
+            if(polling == 0)
+                unusedCounter++;
             toolStripStatusLabel1.Text = "Rate: " + polling + " Hz";
 
             // if a mouse is unused until 60s, reset the counter;
-            if(unusedCounter > 5)
+            if(unusedCounter > 60)
             {
                 unusedCounter = 0;
                 mouse.StopWatchReset();
             }
+
             polling = 0;
 
             // update gain curve

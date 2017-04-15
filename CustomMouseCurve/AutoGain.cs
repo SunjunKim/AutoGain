@@ -25,7 +25,7 @@ namespace CustomMouseCurve
         
         // constants
         const int binCount = 128; // how many bins are there
-        const double binSize = 0.0005; // size of a bin unit: m/s
+        const double binSize = 0.0005; // size of a bin unit: m/s 0.0005 => 0.5mm/s motor movement
         
         // internal variables
         string deviceID;
@@ -40,7 +40,7 @@ namespace CustomMouseCurve
         const double timewindow = 10; // unit: second
         List<double> gainCurves = new List<double>(binCount);
         int max_number_submovement = 3;
-        double gain_change_rate = 0.0001;
+        double gain_change_rate = 0.00001;
 
         //Aim point estimation
         double sub_aim_point = 0.95;
@@ -51,8 +51,8 @@ namespace CustomMouseCurve
         double filtered_aim_point = 0.95;
 
         // for Hz calculation
-        int reportCount = 0;
-        double lastTimeRecord = 0;
+        int reportCounter = 0;
+        Timer hzCalculateTimer;
 
         /// <summary>
         /// AutoGain initializer
@@ -65,7 +65,12 @@ namespace CustomMouseCurve
             this.deviceID = deviceID;
 
             Rectangle resolution = Screen.PrimaryScreen.Bounds;
-            
+
+            hzCalculateTimer = new Timer();
+            hzCalculateTimer.Interval = 1000;
+            hzCalculateTimer.Tick += hzCalculateTimer_Tick;
+            hzCalculateTimer.Start();
+
             String logPath = getLogPath();
             // get the latest log if exist
             if(Directory.Exists(logPath))
@@ -90,6 +95,17 @@ namespace CustomMouseCurve
             // logger initialize
             int capacity = (int)(timewindow * 1000);
             events = new Queue<MouseEventLog>(capacity);
+        }
+
+        void hzCalculateTimer_Tick(object sender, EventArgs e)
+        {
+            // every 1 sec, calculate Hz.
+            if (reportCounter > this.rate)
+            {
+                this.rate = reportCounter;
+                Debug.WriteLine("Update report rate: {0}", this.rate);
+            }
+            reportCounter = 0;
         }
 
         public override string ToString()
@@ -208,7 +224,7 @@ namespace CustomMouseCurve
         public void feedMouseEvent(MouseEventLog datapoint)
         {
             events.Enqueue(datapoint);
-            reportCount++;
+            reportCounter++;
 
             // button clicked!!
             //if((datapoint.buttonflags & (RawMouse.RI_MOUSE_LEFT_BUTTON_DOWN | RawMouse.RI_MOUSE_RIGHT_BUTTON_DOWN)) != 0)
@@ -219,21 +235,9 @@ namespace CustomMouseCurve
                 // clear the queue
                 events.Clear();
             }
-
-            // every 1 sec, calculate Hz.
-            if((datapoint.timestamp - lastTimeRecord) >= 1000)
-            {
-                if (reportCount > this.rate)
-                {
-                    this.rate = reportCount;
-                    Debug.WriteLine("Update report rate: {0}", this.rate);
-                }
-
-                lastTimeRecord = datapoint.timestamp;
-                reportCount = 0;
-            }
+            
             // clear old datapoints over the timewindow.
-            while (events.Count > 0 && events.Peek().timestamp < datapoint.timestamp - timewindow * 1000)
+            while (events.Count > 0 && (events.Peek().usTimestamp < datapoint.usTimestamp - timewindow * 1e6 || events.Peek().timestamp > datapoint.timestamp))
             {
                 events.Dequeue();
             }
@@ -684,6 +688,7 @@ namespace CustomMouseCurve
             public int deviceDY;
             public double systemDX;
             public double systemDY;
+            public long usTimestamp;
             public double timestamp;
             public double timespan;
             public string source;
@@ -699,13 +704,14 @@ namespace CustomMouseCurve
             /// <param name="timestamp">timestamp (in ms, absoulute)</param>
             /// <param name="timespan">timespan (in ms, time elapsed from the last event)</param>
             /// <param name="source">vid and pid descriptor of the device</param>
-            public MouseEventLog(ushort buttonflags, int devDX, int devDY, double sysDX, double sysDY, double timestamp, double timespan, string source)
+            public MouseEventLog(ushort buttonflags, int devDX, int devDY, double sysDX, double sysDY, long usTimestamp, double timestamp, double timespan, string source)
             {
                 this.buttonflags = buttonflags;
                 this.deviceDX = devDX;
                 this.deviceDY = devDY;
                 this.systemDX = sysDX;
                 this.systemDY = sysDY;
+                this.usTimestamp = usTimestamp;
                 this.timestamp = timestamp;
                 this.timespan = timespan;
                 this.source = source;

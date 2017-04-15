@@ -621,7 +621,7 @@ namespace MouseTester
                                         raw.mouse.buttonsStr.usButtonFlags, 
                                         raw.mouse.lLastX, 
                                         raw.mouse.lLastY,                              
-                                        stopWatch.ElapsedTicks * 1e3 / Stopwatch.Frequency,
+                                        (long)(stopWatch.ElapsedTicks * 1e6 / Stopwatch.Frequency),
                                         dInfo.source
                                         );
 
