@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using MouseTester;
 using System.IO;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace CustomMouseCurve
 {
@@ -19,10 +21,11 @@ namespace CustomMouseCurve
         public double CPI { get { return this.cpi; } }
         public double PPI { get { return this.ppi; } }
         public Queue<MouseEventLog> Events { get { return this.events; } }
+        public List<double> curve { get { return gainCurves; } }
         
         // constants
         const int binCount = 128; // how many bins are there
-        const double binSize = 0.01; // size of a bin unit: m/s
+        const double binSize = 0.0005; // size of a bin unit: m/s
         
         // internal variables
         string deviceID;
@@ -34,8 +37,18 @@ namespace CustomMouseCurve
         double minTimespan { get { return 1000 / rate; } } // minimum timespan for given polling rate
 
         Queue<MouseEventLog> events;
-        const double timewindow = 30; // unit: second
+        const double timewindow = 10; // unit: second
         List<double> gainCurves = new List<double>(binCount);
+        int max_number_submovement = 3;
+        double gain_change_rate = 0.0001;
+
+        //Aim point estimation
+        double sub_aim_point = 0.95;
+        double process_noise = 0.2;
+        double sensor_noise = 40.0;
+        double estimated_error = 1.0;
+        double kalman_gain = 1.0;
+        double filtered_aim_point = 0.95;
 
         // for Hz calculation
         int reportCount = 0;
@@ -45,18 +58,21 @@ namespace CustomMouseCurve
         /// AutoGain initializer
         /// </summary>
         /// <param name="deviceID">pointing device id</param>
-        /// <param name="cpi">pointing device counts per inch</param>
         /// <param name="dpi">display device dots per inch</param>
-        public AutoGain(string deviceID, double cpi = 800, double dpi = 72)
+        /// <param name="cpi">pointing device counts per inch</param>
+        public AutoGain(string deviceID, double dpi = 96, double cpi = 800)
         {
             this.deviceID = deviceID;
 
+            Rectangle resolution = Screen.PrimaryScreen.Bounds;
+            
             String logPath = getLogPath();
             // get the latest log if exist
             if(Directory.Exists(logPath))
             {
                 // load the latest log.
                 loadAutoGain();
+                this.ppi = dpi;
             }
             else
             {
@@ -157,7 +173,7 @@ namespace CustomMouseCurve
             if (!success)
                 return false;
 
-            Console.WriteLine("Successfully loaded {0}", path);
+            Debug.WriteLine("Successfully loaded {0}", path);
             return true;
         }
 
@@ -195,7 +211,8 @@ namespace CustomMouseCurve
             reportCount++;
 
             // button clicked!!
-            if((datapoint.buttonflags & (RawMouse.RI_MOUSE_LEFT_BUTTON_DOWN | RawMouse.RI_MOUSE_RIGHT_BUTTON_DOWN)) != 0)
+            //if((datapoint.buttonflags & (RawMouse.RI_MOUSE_LEFT_BUTTON_DOWN | RawMouse.RI_MOUSE_RIGHT_BUTTON_DOWN)) != 0)
+            if ((datapoint.buttonflags & RawMouse.RI_MOUSE_LEFT_BUTTON_DOWN) != 0)
             {
                 // update the gain curve
                 updateCurve();
@@ -228,20 +245,338 @@ namespace CustomMouseCurve
         private void updateCurve()
         {
             // TODO: Byungjoo ==> make this function.
-            
+
             // get history from the queue
             List<MouseEventLog> history = events.ToList<MouseEventLog>();
-            
+
+            // calculate speeds.
+            List<double> speeds = new List<double>();
+            List<double> timespans = new List<double>();
+            List<double> sx_sum = new List<double>();
+            List<double> sy_sum = new List<double>();
+            double sx_temp = 0;
+            double sy_temp = 0;
+            double tx;
+            double ty;
+
+            foreach (var displacement in history)
+            {
+                sx_temp += displacement.systemDX;
+                sy_temp += displacement.systemDY;
+                speeds.Add(Math.Sqrt(displacement.systemDX * displacement.systemDX + displacement.systemDY * displacement.systemDY) / cpm / (displacement.timespan / 1000));
+                timespans.Add(displacement.timespan);
+                sx_sum.Add(sx_temp);
+                sy_sum.Add(sy_temp);
+            }
+            tx = sx_sum[sx_sum.Count - 1];
+            ty = sy_sum[sy_sum.Count - 1];
+
+            // TODO: speed array filtering
+            double persistence1d_threshold = 0.01;
+
+            List<int> mins = new List<int>();
+            List<int> maxs = new List<int>();
+            #region persistence1d, finding peaks and save them to mins/maxs
+            persistence1d.p1d p;
+            p = new persistence1d.p1d();
+
+            p.RunPersistence(speeds);
+
+            p.GetExtremaIndices(mins, maxs, persistence1d_threshold);
+            p.Dispose();
+            #endregion
+
+            mins.Sort();
+            maxs.Sort();
+
+            if (mins.Count > 1 && maxs.Count > 1)
+            {
+                // if the Max peak appeared first, remove this.
+                if (mins[0] > maxs[0])
+                {
+                    maxs.RemoveAt(0);
+                }
+                mins.Add(speeds.Count - 1);
+
+                // find the first biggest sub movement.
+
+                int first_max_index = 0;        // index of maxs ==> first max index in speed array = maxs[first_max_index] / min[first_min_index]
+                int first_min_index = 0;
+                #region Finding the biggest sub movement
+                double buffer_speed = 0;
+                for (int i = 0; i < maxs.Count; i++)
+                {
+                    if (speeds[maxs[i]] > buffer_speed)
+                    {
+                        first_max_index = i;
+                        buffer_speed = speeds[maxs[i]];
+                    }
+                }
+
+                int gMax = maxs[first_max_index];
+                for (int i = 0; i < mins.Count; i++)
+                {
+                    if (mins[i] < gMax)
+                    {
+                        first_min_index = i;
+                    }
+                }
+                #endregion
+
+
+                // find clutching submovements (aligned to maxs)
+                List<int> is_clutching_max_aligned = new List<int>();
+                List<int> is_clutching_min_aligned = new List<int>();
+
+                double clutch_timespan_threshold = 130; // ms
+                #region Marking clutching submovements
+
+                for (int i = 0; i < maxs.Count - 1; i++)
+                {
+                    int clutching_mark = 0;
+                    for (int j = maxs[i]; j < maxs[i + 1]; j++)
+                    {
+                        if (j < timespans.Count)
+                        {
+                            double timespan = timespans[j];
+                            if (timespan > clutch_timespan_threshold)
+                            {
+                                clutching_mark = 1;
+                            }
+                        }
+                    }
+                    is_clutching_max_aligned.Add(clutching_mark);
+                }
+                is_clutching_max_aligned.Add(0);
+
+
+                List<int> max_checked = new List<int>();
+
+                for (int i = 0; i < maxs.Count; i++)
+                {
+                    max_checked.Add(0);
+                }
+
+                for (int i = 0; i < mins.Count - 1; i++)
+                {
+                    Boolean never_assigned = true;
+                    for (int j = 0; j < maxs.Count; j++)
+                    {
+
+                        if (mins[i] < maxs[j] && mins[i + 1] > maxs[j] && max_checked[j] == 0)
+                        {
+                            is_clutching_min_aligned.Add(is_clutching_max_aligned[j]);
+                            max_checked[j] = 1;
+                            never_assigned = false;
+                        }
+
+                    }
+
+                    if (never_assigned)
+                    {
+                        is_clutching_min_aligned.Add(0);
+                    }
+                }
+
+
+                #endregion
+
+                // find unamied and interrupted submovements (aligned to mins)
+                List<int> is_unaimed = new List<int>();
+                List<int> is_interrupted = new List<int>();
+
+                double unaimed_angle_threshold = Math.PI / 4;
+                double overshoot_threshold = 1.5;
+                double interrupted_threshold = 0.5;
+
+                #region Marking unaimed and interrupted submovements
+                for (int i = 0; i < mins.Count - 1; i++)
+                {
+                    double sx_start = sx_sum[mins[i]];
+                    double sy_start = sy_sum[mins[i]];
+                    double max_angle = 0;
+                    double angle = 0;
+                    double d1 = 0;
+                    double d2 = 0;
+                    double d3 = 0;
+                    double a = 0;
+                    double b = 0;
+
+                    int unaimed_mark = 1;
+                    int interrupted_mark = 0;
+
+
+                    for (int j = mins[i]; j <= mins[i + 1]; j++)
+                    {
+                        double sx_end = sx_sum[j];
+                        double sy_end = sy_sum[j];
+                        a = sy_end - sy_start;
+                        b = sx_start - sx_end;
+                        d1 = (Math.Sqrt((sx_start - sx_end) * (sx_start - sx_end) + (sy_start - sy_end) * (sy_start - sy_end)));
+                        d2 = (Math.Sqrt((sx_start - tx) * (sx_start - tx) + (sy_start - ty) * (sy_start - ty)));
+                        d3 = (Math.Sqrt((sx_end - tx) * (sx_end - tx) + (sy_end - ty) * (sy_end - ty)));
+                        angle = 0;
+                        if (d1 != 0 && d2 != 0)
+                        {
+                            angle = Math.Acos((d1 * d1 + d2 * d2 - d3 * d3) / 2 / d1 / d2);
+                            if (angle > max_angle)
+                            {
+                                max_angle = angle;
+                            }
+                        }
+                    }
+
+                    if (a != 0 && b != 0 && (d2 * Math.Cos(angle)) != 0 && max_angle <= unaimed_angle_threshold && d1 / (d2 * Math.Cos(angle)) <= overshoot_threshold)
+                    {
+                        unaimed_mark = 0;
+                    }
+                    is_unaimed.Add(unaimed_mark);
+
+                    if (a != 0 && b != 0 && (d2 * Math.Cos(angle)) != 0 && d1 / (d2 * Math.Cos(angle)) < interrupted_threshold)
+                    {
+                        interrupted_mark = 1;
+                    }
+                    is_interrupted.Add(interrupted_mark);
+
+                }
+                #endregion
+
+
+                int first_non_clutching_submovement = mins.Count - 1;
+                for (int i = 0; i < is_clutching_min_aligned.Count; i++)
+                {
+                    if (is_clutching_min_aligned[i] != 1)
+                    {
+                        first_non_clutching_submovement = i;
+                        break;
+                    }
+                }
+
+                int index_right = mins.Count - 1;
+                int index_last_ballistic = first_non_clutching_submovement + max_number_submovement - 1;
+
+                List<int> speedAppearingCounts = new List<int>();
+                List<double> gainChanges = new List<double>();
+
+                for (int i = 0; i < binCount; i++)
+                {
+                    speedAppearingCounts.Add(0);
+                    gainChanges.Add(0);
+                }
+
+                // Start updating gain function per each submovemen
+                #region updating gain function
+                for (int i = index_right - 1; i >= 0; i--)
+                {
+                    double sx_end = sx_sum[mins[i + 1]];
+                    double sy_end = sy_sum[mins[i + 1]];
+                    double sx_start = sx_sum[mins[i]];
+                    double sy_start = sy_sum[mins[i]];
+                    double a = sy_end - sy_start;
+                    double b = sx_start - sx_end;
+                    double d1 = (Math.Sqrt((sx_start - sx_end) * (sx_start - sx_end) + (sy_start - sy_end) * (sy_start - sy_end)));
+                    double d2 = (Math.Sqrt((sx_start - tx) * (sx_start - tx) + (sy_start - ty) * (sy_start - ty)));
+                    double d3 = (Math.Sqrt((sx_end - tx) * (sx_end - tx) + (sy_end - ty) * (sy_end - ty)));
+                    double angle = 0;
+
+                    if (d1 != 0 && d2 != 0)
+                        angle = Math.Acos((d1 * d1 + d2 * d2 - d3 * d3) / 2 / d1 / d2);
+
+                    // update aim point only for non-interrupted, non-clutching, non-unaimed, ballistic submovements
+                    if (is_clutching_min_aligned[i] != 1 && is_interrupted[i] != 1 && is_unaimed[i] != 1 && i <= index_last_ballistic)
+                    {
+                        updateAimPoint(d1 / (d2 * Math.Cos(angle)));
+                    }
+
+                    double longitudinal_error = (sub_aim_point) * (d2 * Math.Cos(angle)) - d1;
+                    if (i > index_last_ballistic)
+                    {
+                        longitudinal_error = d2 * Math.Cos(angle) - d1;
+                    }
+
+                    if (is_unaimed[i] != 1)
+                    {
+                        for (int j = mins[i]; j < mins[i + 1]; j++)
+                        {
+                            double current_speed = speeds[j];
+
+                            if (current_speed != 0)
+                            {
+
+                                int middle = (int)Math.Round(current_speed / binSize);
+                                //Console.WriteLine(middle);
+                                middle = Math.Min(middle, speedAppearingCounts.Count - 1);
+                                   
+                                speedAppearingCounts[middle] = speedAppearingCounts[middle] + 1;
+                            }
+                        }
+
+                        for (int j = 0; j < binCount; j++)
+                        {
+                            if (speedAppearingCounts[j] > 0.0)
+                            {
+                                gainChanges[j] = gainChanges[j] + gain_change_rate * longitudinal_error;
+                            }
+                            speedAppearingCounts[j] = 0;
+                        }
+
+                        double[] kernel = { 0.0, 0, 0.27901, 0.44198, 0.27901, 0, 0.0 };
+
+                        for (int j = 0; j < gainCurves.Count; j++)
+                        {
+                            double value = 0;
+                            for (int k = -3; k < 3; k++)
+                            {
+                                if ((j + k) >= 0 && (j + k) < binCount)
+                                {
+                                    value += gainChanges[j + k] * kernel[k + 3];
+                                }
+                            }
+                            gainCurves[j] = gainCurves[j] + value;
+                            if (gainCurves[j] < 0.0)
+                            {
+                                gainCurves[j] = 0.0;
+                            }
+
+                        }
+
+                    }
+                }
+
+                for (int i = 0; i < binCount; i++)
+                {
+                    gainChanges[i] = 0.0;
+                }
+
+                #endregion
+
+            }
+
+            //TODO: definition of gain function, range of input speed, bin count, averaging speed list, deciding appropriate gain change rate, modifying to only work with last 2-3 submovements (now it is updating gain functions for all submovements) 
+
             // TODO: gain recalculation.
             // check the [MouseEventLog] struct for detailed descriptions for [history] logs.
             // for persistence1d, use: List<PairedExtrema> getPairedExtrema(List<double> inputData, double threshold)
+            //for (int i = 0; i < gainCurves.Count; i++)
+            //{
+            //    // update here gainCurves[i] = ??;
+            //}
             saveAutoGain();
-            for(int i=0;i<gainCurves.Count;i++)
-            {
-                // update here gainCurves[i] = ??;
-            }
-
         }
+
+        /// <summary>
+        /// low pass filtering aim point measurements
+        /// </summary>
+        /// <param name="instant_aim_point"></param>
+        public void updateAimPoint(double instant_aim_point)
+        {
+            estimated_error = estimated_error + sensor_noise;
+            kalman_gain = process_noise / (process_noise + sensor_noise);
+            filtered_aim_point = filtered_aim_point + kalman_gain * (instant_aim_point - filtered_aim_point);
+            estimated_error = (1 - kalman_gain) * estimated_error;
+            sub_aim_point = filtered_aim_point;
+        }
+
 
         /// <summary>
         /// translate mouse movement
@@ -258,10 +593,11 @@ namespace CustomMouseCurve
                 
             double magnitude = Math.Sqrt(dx * dx + dy * dy) / cpm; // calculated unit: meter
             double speed = magnitude / (timespan / 1000);  // unit: m/s
+            //Console.WriteLine(speed);
 
-            double CDGain = cpi / ppi;
+            double CDGain = ppi / cpi;
 
-            double gain = getInterpolatedValue(speed / binSize, gainCurves) / CDGain;
+            double gain = getInterpolatedValue(speed / binSize, gainCurves) * CDGain;
 
             tx = dx * gain;
             ty = dy * gain;
@@ -279,7 +615,7 @@ namespace CustomMouseCurve
             if (lowerIndex < 0)
                 return list[0];
             // maximum value (for out of index)
-            if (upperIndex > list.Count)
+            if (upperIndex >= list.Count)
                 return list[list.Count - 1];
             
             return linearMap(index, lowerIndex, upperIndex, list[lowerIndex], list[upperIndex]);

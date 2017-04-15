@@ -31,7 +31,6 @@
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.종료ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -46,12 +45,14 @@
             this.listBoxAGFunctions = new System.Windows.Forms.ListBox();
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.textBoxInfo = new System.Windows.Forms.TextBox();
-            this.chart1 = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            this.buttonSetup = new System.Windows.Forms.Button();
+            this.buttonReset = new System.Windows.Forms.Button();
+            this.chartGainCurve = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.trackBar1 = new System.Windows.Forms.TrackBar();
             this.contextMenuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chartGainCurve)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -131,11 +132,11 @@
             // labelDevice
             // 
             this.labelDevice.AutoSize = true;
-            this.labelDevice.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelDevice.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.labelDevice.Location = new System.Drawing.Point(2, 10);
             this.labelDevice.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
             this.labelDevice.Name = "labelDevice";
-            this.labelDevice.Size = new System.Drawing.Size(133, 15);
+            this.labelDevice.Size = new System.Drawing.Size(133, 14);
             this.labelDevice.TabIndex = 6;
             this.labelDevice.Text = "Current: 0000_0000";
             // 
@@ -143,9 +144,9 @@
             // 
             this.listBoxAGFunctions.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
-            this.listBoxAGFunctions.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.listBoxAGFunctions.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.listBoxAGFunctions.FormattingEnabled = true;
-            this.listBoxAGFunctions.ItemHeight = 15;
+            this.listBoxAGFunctions.ItemHeight = 14;
             this.listBoxAGFunctions.Location = new System.Drawing.Point(159, 10);
             this.listBoxAGFunctions.Name = "listBoxAGFunctions";
             this.listBoxAGFunctions.Size = new System.Drawing.Size(83, 214);
@@ -157,6 +158,8 @@
             | System.Windows.Forms.AnchorStyles.Left)));
             this.flowLayoutPanel1.Controls.Add(this.labelDevice);
             this.flowLayoutPanel1.Controls.Add(this.textBoxInfo);
+            this.flowLayoutPanel1.Controls.Add(this.buttonSetup);
+            this.flowLayoutPanel1.Controls.Add(this.buttonReset);
             this.flowLayoutPanel1.Location = new System.Drawing.Point(5, 0);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Padding = new System.Windows.Forms.Padding(0, 10, 0, 10);
@@ -165,8 +168,8 @@
             // 
             // textBoxInfo
             // 
-            this.textBoxInfo.Font = new System.Drawing.Font("Courier New", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBoxInfo.Location = new System.Drawing.Point(3, 28);
+            this.textBoxInfo.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.textBoxInfo.Location = new System.Drawing.Point(3, 27);
             this.textBoxInfo.Multiline = true;
             this.textBoxInfo.Name = "textBoxInfo";
             this.textBoxInfo.ReadOnly = true;
@@ -174,24 +177,45 @@
             this.textBoxInfo.Size = new System.Drawing.Size(145, 100);
             this.textBoxInfo.TabIndex = 7;
             // 
-            // chart1
+            // buttonSetup
             // 
-            this.chart1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.buttonSetup.Location = new System.Drawing.Point(2, 132);
+            this.buttonSetup.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonSetup.Name = "buttonSetup";
+            this.buttonSetup.Size = new System.Drawing.Size(65, 26);
+            this.buttonSetup.TabIndex = 8;
+            this.buttonSetup.Text = "Setup";
+            this.buttonSetup.UseVisualStyleBackColor = true;
+            this.buttonSetup.Click += new System.EventHandler(this.buttonSetup_Click);
+            // 
+            // buttonReset
+            // 
+            this.buttonReset.Location = new System.Drawing.Point(71, 132);
+            this.buttonReset.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonReset.Name = "buttonReset";
+            this.buttonReset.Size = new System.Drawing.Size(74, 26);
+            this.buttonReset.TabIndex = 9;
+            this.buttonReset.Text = "Reset";
+            this.buttonReset.UseVisualStyleBackColor = true;
+            // 
+            // chartGainCurve
+            // 
+            this.chartGainCurve.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            chartArea1.AxisX.Minimum = 0D;
+            chartArea1.AxisY.Minimum = 0D;
             chartArea1.Name = "ChartArea1";
-            this.chart1.ChartAreas.Add(chartArea1);
-            legend1.Name = "Legend1";
-            this.chart1.Legends.Add(legend1);
-            this.chart1.Location = new System.Drawing.Point(248, 10);
-            this.chart1.Name = "chart1";
+            this.chartGainCurve.ChartAreas.Add(chartArea1);
+            this.chartGainCurve.Location = new System.Drawing.Point(248, 10);
+            this.chartGainCurve.Name = "chartGainCurve";
             series1.ChartArea = "ChartArea1";
-            series1.Legend = "Legend1";
-            series1.Name = "Series1";
-            this.chart1.Series.Add(series1);
-            this.chart1.Size = new System.Drawing.Size(324, 181);
-            this.chart1.TabIndex = 9;
-            this.chart1.Text = "chartCurveVisualizer";
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series1.Name = "seriesGainCurve";
+            this.chartGainCurve.Series.Add(series1);
+            this.chartGainCurve.Size = new System.Drawing.Size(324, 181);
+            this.chartGainCurve.TabIndex = 9;
+            this.chartGainCurve.Text = "chartCurveVisualizer";
             // 
             // trackBar1
             // 
@@ -208,13 +232,15 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(584, 261);
             this.Controls.Add(this.trackBar1);
-            this.Controls.Add(this.chart1);
+            this.Controls.Add(this.chartGainCurve);
             this.Controls.Add(this.listBoxAGFunctions);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.flowLayoutPanel1);
+            this.DoubleBuffered = true;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.KeyPreview = true;
             this.Name = "Form1";
-            this.Text = "Custom Mouse Curve";
+            this.Text = "AutoGain Ver 0.1";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.contextMenuStrip1.ResumeLayout(false);
@@ -222,7 +248,7 @@
             this.statusStrip1.PerformLayout();
             this.flowLayoutPanel1.ResumeLayout(false);
             this.flowLayoutPanel1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.chart1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.chartGainCurve)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -244,8 +270,10 @@
         private System.Windows.Forms.ListBox listBoxAGFunctions;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
         private System.Windows.Forms.TextBox textBoxInfo;
-        private System.Windows.Forms.DataVisualization.Charting.Chart chart1;
+        private System.Windows.Forms.DataVisualization.Charting.Chart chartGainCurve;
         private System.Windows.Forms.TrackBar trackBar1;
+        private System.Windows.Forms.Button buttonSetup;
+        private System.Windows.Forms.Button buttonReset;
     }
 }
 

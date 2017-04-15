@@ -610,9 +610,10 @@ namespace MouseTester
                                 }
 
                                 // TODO: Handle absolute type mouse device!
-                                if((raw.mouse.usFlags | MOUSE_MOVE_ABSOLUTE) != 0)
+                                if((raw.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) != 0)
                                 {
-
+                                    mevent(null, new MouseEvent());
+                                    return;
                                 }
 
                                 MouseEvent meventinfo = 

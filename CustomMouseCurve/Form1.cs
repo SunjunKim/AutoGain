@@ -12,6 +12,7 @@ using System.Windows.Forms;
 using MouseTester;
 using Gma.System.MouseKeyHook;
 using System.IO;
+using System.Windows.Forms.DataVisualization.Charting;
 //using libPointingWrapper;
 
 /*
@@ -34,17 +35,29 @@ namespace CustomMouseCurve
         bool doTranslate = true;        // true if it translate the mouse events
         int unusedCounter = 0;
 
+        double currentDPI = 96.0; // majority of screen's default dpi
+
         Dictionary<String, AutoGain> AGfunctions = new Dictionary<string, AutoGain>();
+        AutoGain currentAG = null;
 
         //AutoGain ag = new AutoGain("test", 4000, 95);
 
         private void mouseEventCallback(object RawMouse, MouseEvent meventinfo)
         {
+            if (RawMouse == null)
+            {
+                pauseTranslate();
+                textBoxInfo.Text = "WARNING: Absolute device is not supported!";
+                return;
+            }
+            else
+                resumeTranslate();
+
             if (doTranslate)
             {
                 if(!AGfunctions.ContainsKey(meventinfo.source))
                 {
-                    AGfunctions.Add(meventinfo.source, new AutoGain(meventinfo.source));
+                    AGfunctions.Add(meventinfo.source, new AutoGain(meventinfo.source, currentDPI));
                     loadLogs();
                 }
                 translateFunction(meventinfo.buttonflags, meventinfo.lastx, meventinfo.lasty, meventinfo.ts, meventinfo.source);
@@ -52,6 +65,7 @@ namespace CustomMouseCurve
             unusedCounter = 0;
             labelDevice.Text = "Current: " + meventinfo.source;
             textBoxInfo.Text = AGfunctions[meventinfo.source].ToString();
+            currentAG = AGfunctions[meventinfo.source];
         }
 
         /// <summary>
@@ -122,23 +136,19 @@ namespace CustomMouseCurve
             }
         }
 
-        /*public void setTransferFunction(libPointing library, string URI)
-        {
-            byte[] bytes = Encoding.ASCII.GetBytes(URI);
-            unsafe
-            {
-                fixed (byte* bp = bytes)
-                {
-                    sbyte* sp = (sbyte*)bp;
-                    //SP is now what you want
-                    library.setTranslateFunction(sp);
-                }
-            }
-        }*/
-
         public Form1()
         {
             InitializeComponent();
+
+            // get system dpi setup
+            PointF dpi = PointF.Empty;
+            using (Graphics g = this.CreateGraphics())
+            {
+                dpi.X = g.DpiX;
+                dpi.Y = g.DpiY;
+            }
+            currentDPI = Math.Sqrt(dpi.X * dpi.X + dpi.Y * dpi.Y) / Math.Sqrt(2);
+            Debug.WriteLine("current monitor DPI : {0}", currentDPI);
             
             // Code adopted from https://github.com/microe1/MouseTester/blob/master/MouseTester/MouseTester/Form1.cs
             #region Set process priority to the highest and RAWINPUT mouse
@@ -212,6 +222,22 @@ namespace CustomMouseCurve
         // Code adopted from https://github.com/microe1/MouseTester/blob/master/MouseTester/MouseTester/Form1.cs
         protected override void WndProc(ref Message m)
         {
+            const int WM_NCLBUTTONDOWN = 0x00A1;
+            const int WM_NCLBUTTONUP = 0x00A2;
+
+            // detect form title bar click, and disable translation.
+            switch(m.Msg)
+            {
+                case WM_NCLBUTTONDOWN:
+                    pauseTranslate();
+                    m.Result = IntPtr.Zero;
+                    break;
+
+                case WM_NCLBUTTONUP:
+                    resumeTranslate();
+                    m.Result = IntPtr.Zero;
+                    break;
+            }
             this.mouse.ProcessRawInput(m);
             base.WndProc(ref m);
         }
@@ -235,6 +261,20 @@ namespace CustomMouseCurve
                 mouse.StopWatchReset();
             }
             polling = 0;
+
+            // update gain curve
+            {
+                Series curveChart = chartGainCurve.Series.ElementAt(0);
+                curveChart.Points.Clear();
+
+                if (currentAG != null)
+                {
+                    for (int i = 0; i < currentAG.curve.Count; i++)
+                    {
+                        curveChart.Points.AddXY(i, currentAG.curve[i]);
+                    }
+                }
+            }
         }
 
         private void oFFToolStripMenuItem_Click(object sender, EventArgs e)
@@ -272,7 +312,30 @@ namespace CustomMouseCurve
             }
         }
         #endregion
+        
+        private void buttonSetup_Click(object sender, EventArgs e)
+        {
+            if(currentAG != null)
+            {
+                pauseTranslate();
+                SetupForm setWindow = new SetupForm(this, currentAG.CPI, currentAG.PPI);
+                setWindow.Size = new Size(300, 500);
+                setWindow.Show();
+            }
+        }
 
+        public void pauseTranslate()
+        {
+            doTranslate = false;
+        }
+
+        public void resumeTranslate()
+        {
+            if (toolStripSplitButton1.ForeColor == Color.Blue)
+                doTranslate = true;
+            else
+                doTranslate = false;
+        }
 
     }
 
@@ -288,7 +351,6 @@ namespace CustomMouseCurve
         }
     };
 
-    
 
     #region System Mouse related functions (get/set cursor pos)
     public class Win32
