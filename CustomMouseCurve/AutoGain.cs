@@ -490,10 +490,14 @@ namespace CustomMouseCurve
                     }
                 }
 
+                double gainChangeSum = 0;
                 for (int i = 0; i < binCount; i++)
                 {
+                    gainChangeSum += Math.Abs(gainChanges[i]);
                     gainChanges[i] = 0.0;
                 }
+
+                writeLog("GainChange", gainChangeSum.ToString());
 
                 #endregion
 
@@ -878,6 +882,22 @@ namespace CustomMouseCurve
             ret += "\r\nspd  = " + Math.Round(lastSpeed, 5) + " m/s";
             ret += "\r\nbin  = " + Math.Round(lastSpeed / binSize, 2) + "th";
             return ret;
+        }
+
+        public void writeLog(String logType, String value)
+        {
+            String pathString = getLogPath();
+            String filename = "0_log.csv";
+            String fileString = Path.Combine(pathString, filename);
+
+            Directory.CreateDirectory(pathString);
+            StreamWriter sw = new StreamWriter(fileString, true, Encoding.UTF8);
+
+
+            sw.WriteLine("{0},{1},{2}", DateTime.Now.ToString("yyyyMMdd_HHmmss"), logType, value);
+
+            sw.Flush();
+            sw.Close();
         }
 
         public String getLogPath()
