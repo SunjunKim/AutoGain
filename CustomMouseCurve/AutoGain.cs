@@ -38,10 +38,10 @@ namespace CustomMouseCurve
         double minTimespan { get { return 1000 / rate; } } // minimum timespan for given polling rate
 
         Queue<MouseEventLog> events;
-        const double timewindow = 10; // unit: second
+        const double timewindow = 5; // unit: second
         List<double> gainCurves = new List<double>(binCount);
         int max_number_submovement = 3;        
-        double gain_change_rate = 0.000005;
+        double gain_change_rate = 0.005;
 
         double lastSpeed = 0;
 
@@ -106,7 +106,7 @@ namespace CustomMouseCurve
         // TODO: 지금은 constant지만, 나중에 여러 default curve를 로드할 수 있도록 수정.
         public void loadDefaultCurve()
         {
-            loadDefaultCurve("constant", 10.0);
+            loadDefaultCurve("constant", 1.0);
         }
 
         public void loadDefaultCurve(string type, double multiplier)
@@ -114,7 +114,8 @@ namespace CustomMouseCurve
             switch (type)
             {
                 case "constant":
-                    for (int i = 0; i < binCount; i++)
+                    gainCurves.Add(0);
+                    for (int i = 0; i < binCount-1; i++)
                     {
                         gainCurves.Add(multiplier);
                     }
@@ -188,7 +189,9 @@ namespace CustomMouseCurve
             List<MouseEventLog> history = events.ToList<MouseEventLog>();
 
             // calculate speeds.
-            List<double> speeds = new List<double>();
+            List<double> output_speeds = new List<double>();
+            List<double> filtered_speeds = new List<double>();
+
             List<double> input_speeds = new List<double>();
             List<double> timespans = new List<double>();
             List<double> sx_sum = new List<double>();
@@ -202,7 +205,7 @@ namespace CustomMouseCurve
             {
                 sx_temp += displacement.systemDX;
                 sy_temp += displacement.systemDY;
-                speeds.Add(Math.Sqrt(displacement.systemDX * displacement.systemDX + displacement.systemDY * displacement.systemDY) / ppm / (displacement.timespan / 1000));
+                output_speeds.Add(Math.Sqrt(displacement.systemDX * displacement.systemDX + displacement.systemDY * displacement.systemDY) / ppm / (displacement.timespan / 1000));
                 input_speeds.Add(Math.Sqrt(displacement.deviceDX * displacement.deviceDX + displacement.deviceDY * displacement.deviceDY) / cpm / (displacement.timespan / 1000));
                 timespans.Add(displacement.timespan);
                 sx_sum.Add(sx_temp);
@@ -211,8 +214,25 @@ namespace CustomMouseCurve
             tx = sx_sum[sx_sum.Count - 1];
             ty = sy_sum[sy_sum.Count - 1];
 
-            // TODO: speed array filtering
-            double persistence1d_threshold = 0.01;
+            double[] kernel = { 0.0, 0, 0.27901, 0.44198, 0.27901, 0, 0.0 };
+
+            for (int j = 0; j < output_speeds.Count; j++)
+            {
+                double value = 0;
+                double kernel_sum = 0;
+                for (int k = -3; k < 3; k++)
+                {
+                    if ((j + k) >= 0 && (j + k) < output_speeds.Count)
+                    {
+                        value += output_speeds[j + k] * kernel[k + 3];
+                        kernel_sum += kernel[k + 3];
+                    }
+                }
+                filtered_speeds.Add(value / kernel_sum);
+            }
+
+            // TODO: speed array filtering => adaptive thresholding (relative to filtered_speeds.Max)?
+            double persistence1d_threshold = 0.11;
 
             List<int> mins = new List<int>();
             List<int> maxs = new List<int>();
@@ -220,7 +240,7 @@ namespace CustomMouseCurve
             persistence1d.p1d p;
             p = new persistence1d.p1d();
 
-            p.RunPersistence(speeds);
+            p.RunPersistence(filtered_speeds);
 
             p.GetExtremaIndices(mins, maxs, persistence1d_threshold);
             p.Dispose();
@@ -229,6 +249,8 @@ namespace CustomMouseCurve
             mins.Sort();
             maxs.Sort();
 
+            bool is_updated = false;
+
             if (mins.Count > 1 && maxs.Count > 1)
             {
                 // if the Max peak appeared first, remove this.
@@ -236,7 +258,7 @@ namespace CustomMouseCurve
                 {
                     maxs.RemoveAt(0);
                 }
-                mins.Add(speeds.Count - 1);
+                mins.Add(output_speeds.Count - 1);
 
                 // find the first biggest sub movement.
 
@@ -246,10 +268,10 @@ namespace CustomMouseCurve
                 double buffer_speed = 0;
                 for (int i = 0; i < maxs.Count; i++)
                 {
-                    if (speeds[maxs[i]] > buffer_speed)
+                    if (output_speeds[maxs[i]] > buffer_speed)
                     {
                         first_max_index = i;
-                        buffer_speed = speeds[maxs[i]];
+                        buffer_speed = output_speeds[maxs[i]];
                     }
                 }
 
@@ -269,6 +291,8 @@ namespace CustomMouseCurve
                 List<int> is_clutching_min_aligned = new List<int>();
 
                 double clutch_timespan_threshold = 130; // ms
+
+                // TODO: definition of clutching should be updated in terms of distance for a given time widnow
                 #region Marking clutching submovements
 
                 for (int i = 0; i < maxs.Count - 1; i++)
@@ -329,6 +353,8 @@ namespace CustomMouseCurve
                 double overshoot_threshold = 1.5;
                 double interrupted_threshold = 0.5;
 
+                
+                //TODO: Check the threshold of interrupted, overhsoot, ballistic - check movement speed
                 #region Marking unaimed and interrupted submovements
                 for (int i = 0; i < mins.Count - 1; i++)
                 {
@@ -382,7 +408,7 @@ namespace CustomMouseCurve
                 #endregion
 
                 int first_non_clutching_submovement = mins.Count - 1;
-                for (int i = 0; i < is_clutching_min_aligned.Count; i++)
+                for (int i = first_min_index; i < is_clutching_min_aligned.Count; i++)
                 {
                     if (is_clutching_min_aligned[i] != 1)
                     {
@@ -405,10 +431,13 @@ namespace CustomMouseCurve
                     is_speed_appeared.Add(0);
                 }
 
+     
+                
                 // Start updating gain function per each submovemen
                 #region updating gain function
-                for (int i = index_right - 1; i >= 0; i--)
+                for (int i = index_right - 1; i >= first_min_index; i--)
                 {
+                    
                     double sx_end = sx_sum[mins[i + 1]];
                     double sy_end = sy_sum[mins[i + 1]];
                     double sx_start = sx_sum[mins[i]];
@@ -435,6 +464,7 @@ namespace CustomMouseCurve
                         longitudinal_error = d2 * Math.Cos(angle) - d1;
                     }
 
+
                     if (is_unaimed[i] != 1)
                     {
                         for (int j = mins[i]; j < mins[i + 1]; j++)
@@ -444,7 +474,7 @@ namespace CustomMouseCurve
                             if (current_speed != 0)
                             {
 
-                                int middle = (int)Math.Round(current_speed / binSize);
+                                int middle = (int)Math.Ceiling(current_speed / binSize);
                                 if (middle < speedAppearingCounts.Count && is_speed_appeared[middle] == 0)
                                 {
                                     speedAppearingCounts[middle] = speedAppearingCounts[middle] + 1;
@@ -464,24 +494,26 @@ namespace CustomMouseCurve
                         {
                             if (speedAppearingCounts[j] > 0.0)
                             {
+
                                 gainChanges[j] = gainChanges[j] + gain_change_rate * longitudinal_error;
+                                is_updated = true;
                             }
                             speedAppearingCounts[j] = 0;
                         }
 
-                        double[] kernel = { 0.0, 0, 0.27901, 0.44198, 0.27901, 0, 0.0 };
-
-                        for (int j = 0; j < gainCurves.Count; j++)
+                        for (int j = 1; j < gainCurves.Count; j++)
                         {
                             double value = 0;
+                            double kernel_sum = 0;
                             for (int k = -3; k < 3; k++)
                             {
                                 if ((j + k) >= 0 && (j + k) < binCount)
                                 {
                                     value += gainChanges[j + k] * kernel[k + 3];
+                                    kernel_sum += kernel[k + 3];
                                 }
                             }
-                            gainCurves[j] = gainCurves[j] + value;
+                            gainCurves[j] = gainCurves[j] + value / kernel_sum;
                             if (gainCurves[j] < 0.0)
                             {
                                 gainCurves[j] = 0.0;
@@ -497,24 +529,34 @@ namespace CustomMouseCurve
                     gainChanges[i] = 0.0;
                 }
 
+                List<double> tempGains = new List<double>();
+                for (int j = 1; j < gainCurves.Count; j++)
+                {
+                    double value = 0;
+                    double kernel_sum = 0;
+                    for (int k = -3; k < 3; k++)
+                    {
+                        if ((j + k) >= 0 && (j + k) < binCount)
+                        {
+                            value += gainCurves[j + k] * kernel[k + 3];
+                            kernel_sum += kernel[k + 3];
+                        }
+                    }
+                    tempGains.Add(value / kernel_sum);   
+                }
+
+                gainCurves.Clear();
+                gainCurves.Add(0.0);
+                gainCurves.AddRange(tempGains.ToArray());
+
                 writeLog("GainChange", gainChangeSum.ToString());
 
                 #endregion
 
             }
 
-            //TODO: definition of gain function, range of input speed, bin count, averaging speed list, deciding appropriate gain change rate, modifying to only work with last 2-3 submovements (now it is updating gain functions for all submovements) 
-
-
-            // TODO: gain recalculation.
-            // check the [MouseEventLog] struct for detailed descriptions for [history] logs.
-            // for persistence1d, use: List<PairedExtrema> getPairedExtrema(List<double> inputData, double threshold)
-            //for (int i = 0; i < gainCurves.Count; i++)
-            //{
-            //    // update here gainCurves[i] = ??;
-            //}
-            saveAutoGain();
-
+            if (is_updated)
+                saveAutoGain();
         }
 
         #region prev updateCurve
