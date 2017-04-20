@@ -67,9 +67,12 @@ namespace CustomMouseCurve
         const double timewindow = 5; // unit: second
         List<double> gainCurves = new List<double>(binCount);
         int max_number_submovement = 3;        
-        double gain_change_rate = 0.00001;
+        double gain_change_rate = 0.0001;
 
         double lastSpeed = 0;
+
+        StreamWriter logger;
+
 
         //Aim point estimation
         double process_noise = 0.2;
@@ -124,6 +127,8 @@ namespace CustomMouseCurve
             // logger initialize
             int capacity = (int)(timewindow * 1000);
             events = new Queue<MouseEventLog>(capacity);
+
+            logger = openLog();
         }
 
 
@@ -213,7 +218,6 @@ namespace CustomMouseCurve
         /// </summary>
         private void updateCurve()
         {
-
             resetLoggers();
 
             // get history from the queue
@@ -334,7 +338,7 @@ namespace CustomMouseCurve
             #endregion
 
             // TODO: speed array filtering => adaptive thresholding (relative to filtered_speeds.Max)?
-            double persistence1d_threshold = 0.01;
+            double persistence1d_threshold = 0.03;
 
             List<int> mins = new List<int>();
             List<int> maxs = new List<int>();
@@ -665,7 +669,8 @@ namespace CustomMouseCurve
             {
                 return;
             }
-                
+
+            int overshootCount = 0;
 
             for (int i = index_right - 1; i >= first_min_index; i--)
             {
@@ -696,7 +701,9 @@ namespace CustomMouseCurve
                     longitudinal_error = d2 * Math.Cos(angle) - d1;
                 }
 
-                overshoot_or_undershoot = i.ToString() + "," + is_clutching_min_aligned[i].ToString() + "," + is_interrupted[i].ToString() + "," + is_unaimed[i].ToString()+","+longitudinal_error.ToString()+"\n";
+                overshoot_or_undershoot = i.ToString() + "," + is_clutching_min_aligned[i].ToString() + "," + is_interrupted[i].ToString() + "," + is_unaimed[i].ToString() + "," + longitudinal_error.ToString();
+                writeLog(logger, "overshoot", overshoot_or_undershoot);
+                overshootCount++;
 
                 if (is_unaimed[i] != 1)
                 {
@@ -754,6 +761,8 @@ namespace CustomMouseCurve
                 }
             }
 
+            //writeLog(logger, "Overshoot", ""+overshootCount);
+
             double gainChangeSum = 0;
             for (int i = 0; i < binCount; i++)
             {
@@ -791,7 +800,7 @@ namespace CustomMouseCurve
                 saveAutoGain();
             }
 
-            resetLoggers();    
+            writeLog(logger, "logBundle", makeLogBundle());
         }
 
         /// <summary>
@@ -800,8 +809,6 @@ namespace CustomMouseCurve
         /// <param name="instant_aim_point"></param>
         public void resetLoggers()
         {
-
-
             //sub_aim_point variable should not be reset;
             unaimed_submovement_count = 0;
             clutching_submovement_count = 0;
@@ -839,8 +846,6 @@ namespace CustomMouseCurve
             sub_aim_point = filtered_aim_point;
         }
 
-
-
         void hzCalculateTimer_Tick(object sender, EventArgs e)
         {
             // every 1 sec, calculate Hz.
@@ -865,20 +870,20 @@ namespace CustomMouseCurve
             return ret;
         }
 
-        public void writeLog(String logType, String value)
+        public StreamWriter openLog()
         {
             String pathString = getLogPath();
             String filename = "0_log.csv";
             String fileString = Path.Combine(pathString, filename);
 
             Directory.CreateDirectory(pathString);
-            StreamWriter sw = new StreamWriter(fileString, true, Encoding.UTF8);
+            return new StreamWriter(fileString, true, Encoding.UTF8);
+        }
 
-
+        public void writeLog(StreamWriter sw, String logType, String value)
+        {
             sw.WriteLine("{0},{1},{2}", DateTime.Now.ToString("yyyyMMdd_HHmmss"), logType, value);
-
             sw.Flush();
-            sw.Close();
         }
 
         public String getLogPath()
@@ -964,6 +969,31 @@ namespace CustomMouseCurve
             return loadAutoGain(files.Max());
         }
 
+        private String makeLogBundle()
+        {
+            String logStr = "" + ballistic_submovement_count;
+            logStr += "," + total_submovement_count;
+            logStr += "," + net_submovement_count;
+            logStr += "," + non_ballistic_submovement_count;
+            logStr += "," + unaimed_submovement_count;
+            logStr += "," + clutching_submovement_count;
+            logStr += "," + interrupted_submovement_count;
+            logStr += "," + trajectory_length;
+            logStr += "," + net_gain_change;
+            logStr += "," + force_inefficiency_x;
+            logStr += "," + force_inefficiency_y;
+            logStr += "," + acc_duration_ratio;
+            logStr += "," + click_location_x;
+            logStr += "," + click_location_y;
+            logStr += "," + average_motor_speed;
+            logStr += "," + average_display_speed;
+            logStr += "," + maximum_motor_speed;
+            logStr += "," + maximum_display_speed;
+            logStr += "," + total_duration;
+            logStr += "," + sub_aim_point;
+            
+            return logStr;
+        }
 
         // interpolation
         public static double getInterpolatedValue(double index, List<double> list)
