@@ -44,8 +44,9 @@ namespace CustomMouseCurve
         // public properties
         public string DeviceID { get { return this.deviceID; } }
         public double HZ { get { return this.rate; } }
-        public double CPI { get { return this.cpi; } }
+        public double CPI { get { return this.cpi; } set { this.cpi = value; } }
         public double PPI { get { return this.ppi; } }
+        public double CDGain { get { return ppi / cpi; } }
         public Queue<MouseEventLog> Events { get { return this.events; } }
         public List<double> curve { get { return gainCurves; } }
         public bool doLearning = false;
@@ -118,9 +119,7 @@ namespace CustomMouseCurve
                 this.cpi = cpi;
                 this.ppi = dpi;
 
-                // gain curve initialize
-                loadDefaultCurve();
-
+                loadWindowCurve();
                 saveAutoGain();
             }
 
@@ -134,28 +133,32 @@ namespace CustomMouseCurve
 
 
         // TODO: 지금은 constant지만, 나중에 여러 default curve를 로드할 수 있도록 수정.
-        public void loadDefaultCurve()
-        {
-            loadDefaultCurve("constant", 1.0);
-        }
+        public void loadWindowCurve()
+        {  // gain curve initialize
+            int mouseSpeed;
+            bool isEpp;
 
-        public void loadDefaultCurve(string type, double multiplier)
-        {
-            switch (type)
+            getMouseParameters(out mouseSpeed, out isEpp);
+
+            int slot = (int)Math.Min(mouseSpeed, 20) / 2;
+
+            gainCurves.Clear();
+            if(!isEpp)
             {
-                case "constant":
-                    gainCurves.Add(0);
-                    for (int i = 0; i < binCount-1; i++)
-                    {
-                        gainCurves.Add(multiplier);
-                    }
-                    return;
-                case "epp":
-                    
-
-                    return;
-
+                gainCurves.Add(0);
+                for (int i = 0; i < binCount - 1;i++ )
+                {
+                    gainCurves.Add(winMultipliers[slot]/CDGain);
+                }
             }
+            else
+            {
+                for(int i=0;i<binCount;i++)
+                {
+                    gainCurves.Add(epp[i]*(mouseSpeed/10.0)/CDGain);
+                }
+            }
+            saveAutoGain();
         }
 
         public void feedMouseEvent(MouseEventLog datapoint)
@@ -201,7 +204,6 @@ namespace CustomMouseCurve
             if (lastSpeed < speed)
                 lastSpeed = speed;
 
-            double CDGain = ppi / cpi;
 
             double gain = getInterpolatedValue(speed / binSize, gainCurves) * CDGain;
 
@@ -1104,6 +1106,35 @@ namespace CustomMouseCurve
             }
         }
 
+        #region windows mouse curve related functions
+
+
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool SystemParametersInfo(int uiAction, int uiParam, IntPtr pvParam, int fWinIni);
+
+        // get system mouse setting :: speed tick (1~20) / Enhanced Pointer Precision option val)
+        void getMouseParameters(out int speed, out bool enhancedPointerPrecision)
+        {
+            speed = SystemInformation.MouseSpeed;
+            enhancedPointerPrecision = false;
+
+            const int SPI_GETMOUSE = 0x03;
+
+            Int32[] mouseParams = new Int32[3];
+            IntPtr unmanagedPointer = Marshal.AllocHGlobal(mouseParams.Length * sizeof(Int32));
+
+            // Get the current values.
+            bool result = SystemParametersInfo(SPI_GETMOUSE, 0, unmanagedPointer, 0);
+            Marshal.Copy(unmanagedPointer, mouseParams, 0, mouseParams.Length);
+            Marshal.FreeHGlobal(unmanagedPointer);
+
+            if (result)
+            {
+                if (mouseParams[2] != 0)
+                    enhancedPointerPrecision = true;
+            }
+        }
+
         double[] winMultipliers =
         {
             0.03125,
@@ -1121,7 +1152,6 @@ namespace CustomMouseCurve
 
         double[] epp = 
         {
-            #region epp default curve
             0	,
             0.58	,
             0.655	,
@@ -1250,8 +1280,8 @@ namespace CustomMouseCurve
             2.57808	,
             2.579365079	,
             2.580787402	,
-#endregion
         };
 
+        #endregion
     }
 }

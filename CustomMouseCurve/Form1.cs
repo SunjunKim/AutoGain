@@ -40,9 +40,6 @@ namespace CustomMouseCurve
         Dictionary<String, AutoGain> AGfunctions = new Dictionary<string, AutoGain>();
         AutoGain currentAG = null;
 
-        [DllImport("user32.dll", SetLastError = true)]
-        static extern bool SystemParametersInfo(int uiAction, int uiParam, IntPtr pvParam, int fWinIni);
-
         private void mouseEventCallback(object RawMouse, MouseEvent meventinfo)
         {
             if (RawMouse == null)
@@ -138,30 +135,7 @@ namespace CustomMouseCurve
             }
         }
 
-        // get system mouse setting :: speed tick (1~20) / Enhanced Pointer Precision option val)
-        void getMouseParameters(out int speed, out bool enhancedPointerPrecision)
-        {
-            speed = SystemInformation.MouseSpeed;
-            enhancedPointerPrecision = false;
-
-            const int SPI_GETMOUSE = 0x03;
-
-            Int32[] mouseParams = new Int32[3];
-            IntPtr unmanagedPointer = Marshal.AllocHGlobal(mouseParams.Length * sizeof(Int32));
-
-            // Get the current values.
-            bool result = SystemParametersInfo(SPI_GETMOUSE, 0, unmanagedPointer, 0);
-            Marshal.Copy(unmanagedPointer, mouseParams, 0, mouseParams.Length);
-            Marshal.FreeHGlobal(unmanagedPointer);
-
-            if(result)
-            {
-                if (mouseParams[2] != 0)
-                    enhancedPointerPrecision = true;
-            }
-        }
-
-        public Form1()
+                public Form1()
         {
             InitializeComponent();
 
@@ -210,13 +184,8 @@ namespace CustomMouseCurve
 
             timer1.Start();
 
-            int mouseSpeed;
-            bool epp;
-            getMouseParameters(out mouseSpeed, out epp);
-
             // tick  1:1 - 2:2 - 3:4 - 4:6 - 5:8 - 6:10 - 7:12 - 8:14 - 9:16 - 10:18 - 11:20
             Debug.WriteLine("Current monitor DPI : {0}", currentDPI);
-            Debug.WriteLine("Current mouse setting: speed={0} / epp={1}", mouseSpeed, epp);
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -353,9 +322,19 @@ namespace CustomMouseCurve
             {
                 pauseTranslate();
                 SetupForm setWindow = new SetupForm(this, currentAG.CPI, currentAG.PPI);
-                setWindow.Size = new Size(300, 500);
+                setWindow.Size = new Size(290, 390);
+                setWindow.UpdateData += setWindow_UpdateData;
                 setWindow.Show();
             }
+        }
+
+        void setWindow_UpdateData(object sender, EventArgs e)
+        {
+            SetupForm form = (SetupForm)sender;
+            if (currentAG != null)
+                currentAG.CPI = form.newCPI;
+            form.Close();
+            form.Dispose();
         }
 
         public void pauseTranslate()
@@ -369,6 +348,17 @@ namespace CustomMouseCurve
                 doTranslate = true;
             else
                 doTranslate = false;
+        }
+
+        private void buttonReset_Click(object sender, EventArgs e)
+        {
+            DialogResult dialogResult = MessageBox.Show("This will reset the gain curve with the current windows mouse setting", "Reset?", MessageBoxButtons.YesNo);
+            if (dialogResult == DialogResult.Yes)
+            {
+                if (currentAG != null)
+                    currentAG.loadWindowCurve();
+                //do something
+            }
         }
 
     }

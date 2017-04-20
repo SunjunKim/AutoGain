@@ -30,8 +30,8 @@
         {
             this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
-            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea3 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Series series3 = new System.Windows.Forms.DataVisualization.Charting.Series();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.종료ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.notifyIcon1 = new System.Windows.Forms.NotifyIcon(this.components);
@@ -47,9 +47,9 @@
             this.textBoxInfo = new System.Windows.Forms.TextBox();
             this.buttonSetup = new System.Windows.Forms.Button();
             this.buttonReset = new System.Windows.Forms.Button();
+            this.checkBoxLearninig = new System.Windows.Forms.CheckBox();
             this.chartGainCurve = new System.Windows.Forms.DataVisualization.Charting.Chart();
             this.trackBar1 = new System.Windows.Forms.TrackBar();
-            this.checkBoxLearninig = new System.Windows.Forms.CheckBox();
             this.contextMenuStrip1.SuspendLayout();
             this.statusStrip1.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
@@ -63,12 +63,12 @@
             this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.종료ToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(99, 26);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(134, 34);
             // 
             // 종료ToolStripMenuItem
             // 
             this.종료ToolStripMenuItem.Name = "종료ToolStripMenuItem";
-            this.종료ToolStripMenuItem.Size = new System.Drawing.Size(98, 22);
+            this.종료ToolStripMenuItem.Size = new System.Drawing.Size(133, 30);
             this.종료ToolStripMenuItem.Text = "종료";
             this.종료ToolStripMenuItem.Click += new System.EventHandler(this.종료ToolStripMenuItem_Click);
             // 
@@ -84,10 +84,9 @@
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.toolStripSplitButton1,
             this.toolStripStatusLabel1});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 239);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 361);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Padding = new System.Windows.Forms.Padding(1, 0, 10, 0);
-            this.statusStrip1.Size = new System.Drawing.Size(584, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(834, 31);
             this.statusStrip1.TabIndex = 5;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -101,28 +100,28 @@
             this.toolStripSplitButton1.ForeColor = System.Drawing.Color.Blue;
             this.toolStripSplitButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.toolStripSplitButton1.Name = "toolStripSplitButton1";
-            this.toolStripSplitButton1.Size = new System.Drawing.Size(41, 20);
+            this.toolStripSplitButton1.Size = new System.Drawing.Size(61, 29);
             this.toolStripSplitButton1.Text = "ON";
             this.toolStripSplitButton1.ButtonClick += new System.EventHandler(this.toolStripSplitButton1_ButtonClick);
             // 
             // oFFToolStripMenuItem
             // 
             this.oFFToolStripMenuItem.Name = "oFFToolStripMenuItem";
-            this.oFFToolStripMenuItem.Size = new System.Drawing.Size(95, 22);
+            this.oFFToolStripMenuItem.Size = new System.Drawing.Size(129, 30);
             this.oFFToolStripMenuItem.Text = "OFF";
             this.oFFToolStripMenuItem.Click += new System.EventHandler(this.oFFToolStripMenuItem_Click);
             // 
             // oNToolStripMenuItem
             // 
             this.oNToolStripMenuItem.Name = "oNToolStripMenuItem";
-            this.oNToolStripMenuItem.Size = new System.Drawing.Size(95, 22);
+            this.oNToolStripMenuItem.Size = new System.Drawing.Size(129, 30);
             this.oNToolStripMenuItem.Text = "ON";
             this.oNToolStripMenuItem.Click += new System.EventHandler(this.oNToolStripMenuItem_Click);
             // 
             // toolStripStatusLabel1
             // 
             this.toolStripStatusLabel1.Name = "toolStripStatusLabel1";
-            this.toolStripStatusLabel1.Size = new System.Drawing.Size(121, 17);
+            this.toolStripStatusLabel1.Size = new System.Drawing.Size(183, 26);
             this.toolStripStatusLabel1.Text = "toolStripStatusLabel1";
             // 
             // timer1
@@ -134,10 +133,9 @@
             // 
             this.labelDevice.AutoSize = true;
             this.labelDevice.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelDevice.Location = new System.Drawing.Point(2, 10);
-            this.labelDevice.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.labelDevice.Location = new System.Drawing.Point(3, 15);
             this.labelDevice.Name = "labelDevice";
-            this.labelDevice.Size = new System.Drawing.Size(133, 14);
+            this.labelDevice.Size = new System.Drawing.Size(190, 22);
             this.labelDevice.TabIndex = 6;
             this.labelDevice.Text = "Current: 0000_0000";
             // 
@@ -147,10 +145,11 @@
             | System.Windows.Forms.AnchorStyles.Left)));
             this.listBoxAGFunctions.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.listBoxAGFunctions.FormattingEnabled = true;
-            this.listBoxAGFunctions.ItemHeight = 14;
-            this.listBoxAGFunctions.Location = new System.Drawing.Point(159, 10);
+            this.listBoxAGFunctions.ItemHeight = 22;
+            this.listBoxAGFunctions.Location = new System.Drawing.Point(227, 15);
+            this.listBoxAGFunctions.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.listBoxAGFunctions.Name = "listBoxAGFunctions";
-            this.listBoxAGFunctions.Size = new System.Drawing.Size(83, 214);
+            this.listBoxAGFunctions.Size = new System.Drawing.Size(117, 312);
             this.listBoxAGFunctions.TabIndex = 7;
             // 
             // flowLayoutPanel1
@@ -162,29 +161,30 @@
             this.flowLayoutPanel1.Controls.Add(this.buttonSetup);
             this.flowLayoutPanel1.Controls.Add(this.buttonReset);
             this.flowLayoutPanel1.Controls.Add(this.checkBoxLearninig);
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(5, 0);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(7, 0);
+            this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Padding = new System.Windows.Forms.Padding(0, 10, 0, 10);
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(148, 236);
+            this.flowLayoutPanel1.Padding = new System.Windows.Forms.Padding(0, 15, 0, 15);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(211, 354);
             this.flowLayoutPanel1.TabIndex = 8;
             // 
             // textBoxInfo
             // 
             this.textBoxInfo.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.textBoxInfo.Location = new System.Drawing.Point(3, 27);
+            this.textBoxInfo.Location = new System.Drawing.Point(4, 41);
+            this.textBoxInfo.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.textBoxInfo.Multiline = true;
             this.textBoxInfo.Name = "textBoxInfo";
             this.textBoxInfo.ReadOnly = true;
             this.textBoxInfo.ShortcutsEnabled = false;
-            this.textBoxInfo.Size = new System.Drawing.Size(145, 131);
+            this.textBoxInfo.Size = new System.Drawing.Size(205, 194);
             this.textBoxInfo.TabIndex = 7;
             // 
             // buttonSetup
             // 
-            this.buttonSetup.Location = new System.Drawing.Point(2, 163);
-            this.buttonSetup.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonSetup.Location = new System.Drawing.Point(3, 242);
             this.buttonSetup.Name = "buttonSetup";
-            this.buttonSetup.Size = new System.Drawing.Size(65, 26);
+            this.buttonSetup.Size = new System.Drawing.Size(93, 39);
             this.buttonSetup.TabIndex = 8;
             this.buttonSetup.Text = "Setup";
             this.buttonSetup.UseVisualStyleBackColor = true;
@@ -192,30 +192,44 @@
             // 
             // buttonReset
             // 
-            this.buttonReset.Location = new System.Drawing.Point(71, 163);
-            this.buttonReset.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+            this.buttonReset.Location = new System.Drawing.Point(102, 242);
             this.buttonReset.Name = "buttonReset";
-            this.buttonReset.Size = new System.Drawing.Size(74, 26);
+            this.buttonReset.Size = new System.Drawing.Size(106, 39);
             this.buttonReset.TabIndex = 9;
             this.buttonReset.Text = "Reset";
             this.buttonReset.UseVisualStyleBackColor = true;
+            this.buttonReset.Click += new System.EventHandler(this.buttonReset_Click);
+            // 
+            // checkBoxLearninig
+            // 
+            this.checkBoxLearninig.AutoSize = true;
+            this.checkBoxLearninig.Checked = true;
+            this.checkBoxLearninig.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.checkBoxLearninig.Location = new System.Drawing.Point(4, 288);
+            this.checkBoxLearninig.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.checkBoxLearninig.Name = "checkBoxLearninig";
+            this.checkBoxLearninig.Size = new System.Drawing.Size(102, 22);
+            this.checkBoxLearninig.TabIndex = 10;
+            this.checkBoxLearninig.Text = "Learning";
+            this.checkBoxLearninig.UseVisualStyleBackColor = true;
             // 
             // chartGainCurve
             // 
             this.chartGainCurve.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            chartArea3.AxisX.Minimum = 0D;
-            chartArea3.AxisY.Minimum = 0D;
-            chartArea3.Name = "ChartArea1";
-            this.chartGainCurve.ChartAreas.Add(chartArea3);
-            this.chartGainCurve.Location = new System.Drawing.Point(248, 10);
+            chartArea1.AxisX.Minimum = 0D;
+            chartArea1.AxisY.Minimum = 0D;
+            chartArea1.Name = "ChartArea1";
+            this.chartGainCurve.ChartAreas.Add(chartArea1);
+            this.chartGainCurve.Location = new System.Drawing.Point(354, 15);
+            this.chartGainCurve.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.chartGainCurve.Name = "chartGainCurve";
-            series3.ChartArea = "ChartArea1";
-            series3.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series3.Name = "seriesGainCurve";
-            this.chartGainCurve.Series.Add(series3);
-            this.chartGainCurve.Size = new System.Drawing.Size(324, 181);
+            series1.ChartArea = "ChartArea1";
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series1.Name = "seriesGainCurve";
+            this.chartGainCurve.Series.Add(series1);
+            this.chartGainCurve.Size = new System.Drawing.Size(463, 272);
             this.chartGainCurve.TabIndex = 9;
             this.chartGainCurve.Text = "chartCurveVisualizer";
             // 
@@ -223,28 +237,17 @@
             // 
             this.trackBar1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.trackBar1.Location = new System.Drawing.Point(248, 191);
+            this.trackBar1.Location = new System.Drawing.Point(354, 286);
+            this.trackBar1.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.trackBar1.Name = "trackBar1";
-            this.trackBar1.Size = new System.Drawing.Size(324, 45);
+            this.trackBar1.Size = new System.Drawing.Size(463, 69);
             this.trackBar1.TabIndex = 10;
-            // 
-            // checkBoxLearninig
-            // 
-            this.checkBoxLearninig.AutoSize = true;
-            this.checkBoxLearninig.Checked = true;
-            this.checkBoxLearninig.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkBoxLearninig.Location = new System.Drawing.Point(3, 194);
-            this.checkBoxLearninig.Name = "checkBoxLearninig";
-            this.checkBoxLearninig.Size = new System.Drawing.Size(73, 16);
-            this.checkBoxLearninig.TabIndex = 10;
-            this.checkBoxLearninig.Text = "Learning";
-            this.checkBoxLearninig.UseVisualStyleBackColor = true;
             // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 18F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(584, 261);
+            this.ClientSize = new System.Drawing.Size(834, 392);
             this.Controls.Add(this.trackBar1);
             this.Controls.Add(this.chartGainCurve);
             this.Controls.Add(this.listBoxAGFunctions);
@@ -253,6 +256,7 @@
             this.DoubleBuffered = true;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
+            this.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
             this.Name = "Form1";
             this.Text = "AutoGain Ver 0.1";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);

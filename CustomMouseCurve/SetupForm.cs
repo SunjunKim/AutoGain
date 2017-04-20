@@ -14,6 +14,13 @@ namespace CustomMouseCurve
     {
         Form1 parent;
         public event EventHandler UpdateData;
+        public int newCPI { get {
+            int output = 0;
+            if(int.TryParse(textBoxNewCPI.Text, out output))
+                return output;
+            else
+                return 0;
+        } }
 
         public SetupForm(Form1 parent, double CPI, double PPI)
         {
@@ -25,7 +32,7 @@ namespace CustomMouseCurve
             textBoxInfo.Text += "\r\nPPI means Dots per Inch for a display";
         }
 
-        protected virtual void OnUpdateData(EventArgs e)
+        public virtual void OnUpdateData(EventArgs e)
         {
             EventHandler eh = UpdateData;
             if (eh != null)
@@ -54,6 +61,11 @@ namespace CustomMouseCurve
             }
 
             base.WndProc(ref m);
+        }
+
+        private void buttonUpdate_Click(object sender, EventArgs e)
+        {
+            OnUpdateData(e);
         }
     }
 }
