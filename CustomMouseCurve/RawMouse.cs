@@ -616,16 +616,19 @@ namespace MouseTester
                                     return;
                                 }
 
-                                MouseEvent meventinfo = 
-                                    new MouseEvent(
-                                        raw.mouse.buttonsStr.usButtonFlags, 
-                                        raw.mouse.lLastX, 
-                                        raw.mouse.lLastY,                              
-                                        (long)(stopWatch.ElapsedTicks * 1e6 / Stopwatch.Frequency),
-                                        dInfo.source
-                                        );
+                                if(dInfo != null && dInfo.source != null)
+                                {
+                                    MouseEvent meventinfo =
+                                        new MouseEvent(
+                                            raw.mouse.buttonsStr.usButtonFlags,
+                                            raw.mouse.lLastX,
+                                            raw.mouse.lLastY,
+                                            (long)(stopWatch.ElapsedTicks * 1e6 / Stopwatch.Frequency),
+                                            dInfo.source
+                                            );
 
-                                mevent(this, meventinfo);
+                                    mevent(this, meventinfo);
+                                }
                             }
                             //Debug.WriteLine((stopWatch.ElapsedTicks * 1e3 / Stopwatch.Frequency).ToString() + ", " +
                             //                raw.mouse.lLastX.ToString() + ", " +
