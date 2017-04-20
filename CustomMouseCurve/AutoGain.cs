@@ -54,6 +54,7 @@ namespace CustomMouseCurve
         // constants
         const int binCount = 128; // how many bins are there
         const double binSize = 0.005; // size of a bin unit: m/s 0.01 => 1cm/s motor movement
+        double time_buffer_threshold = 1 / 125.0 * 3.0 * 1000.0;
         
         // internal variables
         string deviceID;
@@ -68,7 +69,7 @@ namespace CustomMouseCurve
         const double timewindow = 5; // unit: second
         List<double> gainCurves = new List<double>(binCount);
         int max_number_submovement = 3;        
-        double gain_change_rate = 0.0001;
+        double gain_change_rate = 0.1;
 
         double lastSpeed = 0;
 
@@ -215,6 +216,7 @@ namespace CustomMouseCurve
 
 
 
+
         /// <summary>
         /// Update the gain curve using AutoGain algorithm
         /// </summary>
@@ -245,27 +247,56 @@ namespace CustomMouseCurve
             List<double> timespans = new List<double>();
             double sx_temp = 0;
             double sy_temp = 0;
+            double input_dx_temp = 0;
+            double input_dy_temp = 0;
+            double output_dx_temp = 0;
+            double output_dy_temp = 0;
             double tx;
             double ty;
-            double time_temp = -history[0].timespan;
 
 
             // Obtaining position, veloctity, speed, acceleration
             #region kinematic measures
+
+
+            double time_temp = -history[0].timespan;
+            double time_buffer = -history[0].timespan;
+
             foreach (var displacement in history)
             {
+                time_temp += displacement.timespan;
                 sx_temp += displacement.systemDX / ppm;
                 sy_temp += displacement.systemDY / ppm;
-                output_speeds.Add(Math.Sqrt(displacement.systemDX * displacement.systemDX + displacement.systemDY * displacement.systemDY) / ppm / (displacement.timespan / 1000));
-                input_speeds.Add(Math.Sqrt(displacement.deviceDX * displacement.deviceDX + displacement.deviceDY * displacement.deviceDY) / cpm / (displacement.timespan / 1000));
+                time_buffer += displacement.timespan;
+                input_dx_temp += displacement.deviceDX;
+                input_dy_temp += displacement.deviceDY;
+                output_dx_temp += displacement.systemDX;
+                output_dy_temp += displacement.systemDY;
 
-                timespans.Add(displacement.timespan);
-                time_temp += displacement.timespan;
-                time_sum.Add(time_temp/1000.0);
-               
-                position_x.Add(sx_temp);
-                position_y.Add(sy_temp);
+                if (time_buffer >= time_buffer_threshold)
+                {
+
+                    output_speeds.Add(Math.Sqrt(output_dx_temp * output_dx_temp + output_dy_temp * output_dy_temp) / ppm / (time_buffer / 1000));
+                    input_speeds.Add(Math.Sqrt(input_dx_temp * input_dx_temp + input_dy_temp * input_dy_temp) / cpm / (time_buffer / 1000));
+
+                    input_dx_temp = 0;
+                    input_dy_temp = 0;
+                    output_dx_temp = 0;
+                    output_dy_temp = 0;
+
+                    timespans.Add(time_buffer);
+                    time_buffer = 0;
+
+                    time_sum.Add(time_temp / 1000.0);
+                    position_x.Add(sx_temp);
+                    position_y.Add(sy_temp);
+                }
             }
+            if (position_x.Count == 0)
+            {
+                return;
+            }
+
             tx = position_x.Last();
             ty = position_y.Last();
             click_location_x = tx;
@@ -273,10 +304,10 @@ namespace CustomMouseCurve
 
             vel_x.Add(0);
             vel_y.Add(0);
-            for (int i = 1; i < position_x.Count-1; i++)
+            for (int i = 1; i < position_x.Count - 1; i++)
             {
                 vel_x.Add((position_x[i + 1] - position_x[i - 1]) / (time_sum[i + 1] - time_sum[i - 1]));
-                vel_y.Add((position_y[i + 1] - position_y[i - 1]) / (time_sum[i + 1] - time_sum[i - 1]));                
+                vel_y.Add((position_y[i + 1] - position_y[i - 1]) / (time_sum[i + 1] - time_sum[i - 1]));
             }
             vel_x.Add(0);
             vel_y.Add(0);
@@ -349,9 +380,9 @@ namespace CustomMouseCurve
             p = new persistence1d.p1d();
 
             p.RunPersistence(filtered_speeds);
-            p.GetExtremaIndices(mins, maxs, persistence1d_threshold);        
+            p.GetExtremaIndices(mins, maxs, persistence1d_threshold);
 
-            
+
             p.Dispose();
             #endregion
 
@@ -365,7 +396,7 @@ namespace CustomMouseCurve
             {
                 return;
             }
-            
+
             // if the Max peak appeared first, remove this.
             if (mins[0] > maxs[0])
             {
@@ -466,7 +497,7 @@ namespace CustomMouseCurve
             double overshoot_threshold = 1.5;
             double interrupted_threshold = 0.5;
 
-                
+
             //TODO: Check the threshold of interrupted, overhsoot, ballistic - check movement speed
             #region Marking unaimed and interrupted submovements
             for (int i = 0; i < mins.Count - 1; i++)
@@ -521,7 +552,7 @@ namespace CustomMouseCurve
             #endregion
 
             int first_non_clutching_submovement = is_clutching_min_aligned.Count - 1;
-            for (int i = first_min_index; i < is_clutching_min_aligned.Count-1; i++)
+            for (int i = first_min_index; i < is_clutching_min_aligned.Count - 1; i++)
             {
                 if (is_clutching_min_aligned[i] != 1)
                 {
@@ -544,9 +575,9 @@ namespace CustomMouseCurve
                 is_speed_appeared.Add(0);
             }
 
-            //Counting each number of submovement types for later logging stage
+            //Counting each number of submovement types for later logging stagef
             #region Count each number of submovement types
-            for (int i = first_min_index; i < is_clutching_min_aligned.Count-1; i++)
+            for (int i = first_min_index; i < is_clutching_min_aligned.Count - 1; i++)
             {
                 if (is_clutching_min_aligned[i] == 1)
                 {
@@ -564,12 +595,12 @@ namespace CustomMouseCurve
                 }
             }
             total_submovement_count = mins.Count - 1;
-            net_submovement_count = mins.Count -1- first_min_index;
+            net_submovement_count = mins.Count - 1 - first_min_index;
 
             if (index_last_ballistic < (mins.Count - 2))
             {
-                non_ballistic_submovement_count = mins.Count - 1 - index_last_ballistic-1;
-                ballistic_submovement_count = index_last_ballistic - first_non_clutching_submovement +1;
+                non_ballistic_submovement_count = mins.Count - 1 - index_last_ballistic - 1;
+                ballistic_submovement_count = index_last_ballistic - first_non_clutching_submovement + 1;
             }
             else
             {
@@ -588,22 +619,22 @@ namespace CustomMouseCurve
             List<double> part_time_sum = time_sum.GetRange(mins[first_min_index], time_sum.Count - mins[first_min_index]);
             List<double> part_acc_x = filtered_acc_x.GetRange(mins[first_min_index], filtered_acc_x.Count - mins[first_min_index]);
             List<double> part_acc_y = filtered_acc_y.GetRange(mins[first_min_index], filtered_acc_y.Count - mins[first_min_index]);
-            
+
             maximum_motor_speed = part_motor_speed.Max();
             maximum_display_speed = part_display_speed.Max();
             average_motor_speed = part_motor_speed.Average();
             average_display_speed = part_display_speed.Average();
 
-            for (int i = 0; i < part_postion_x.Count-1; i++)
+            for (int i = 0; i < part_postion_x.Count - 1; i++)
             {
-                double temp_dx=part_postion_x[i+1] - part_postion_x[i];
+                double temp_dx = part_postion_x[i + 1] - part_postion_x[i];
                 double temp_dy = part_postion_y[i + 1] - part_postion_y[i];
 
-                trajectory_length += Math.Sqrt(temp_dx*temp_dx+temp_dy*temp_dy);
+                trajectory_length += Math.Sqrt(temp_dx * temp_dx + temp_dy * temp_dy);
             }
 
             int speed_peak_index = 0;
-            double temp_speed=0;
+            double temp_speed = 0;
 
             for (int i = 0; i < part_display_speed.Count; i++)
             {
@@ -661,7 +692,7 @@ namespace CustomMouseCurve
             int number_aimed = 0;
             for (int i = index_right - 1; i >= first_min_index; i--)
             {
-                if (is_unaimed[i]!=1)
+                if (is_unaimed[i] != 1)
                 {
                     number_aimed++;
                 }
@@ -772,6 +803,7 @@ namespace CustomMouseCurve
                 gainChanges[i] = 0.0;
             }
 
+            /* Smoothing
             List<double> tempGains = new List<double>();
             for (int j = 1; j < gainCurves.Count; j++)
             {
@@ -785,20 +817,18 @@ namespace CustomMouseCurve
                         kernel_sum += kernel[k + 3];
                     }
                 }
-                tempGains.Add(value / kernel_sum);   
+                tempGains.Add(value / kernel_sum);
             }
-
-            gainCurves.Clear();
-            gainCurves.Add(0.0);
-            gainCurves.AddRange(tempGains.ToArray());
+            */
 
             net_gain_change = gainChangeSum;
 
-//            writeLog("GainChange", gainChangeSum.ToString());
+            //            writeLog("GainChange", gainChangeSum.ToString());
             #endregion
 
             if (is_updated)
             {
+                Console.WriteLine("Updated");
                 saveAutoGain();
             }
 
