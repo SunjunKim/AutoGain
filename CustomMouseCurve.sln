@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.21005.1
-MinimumVisualStudioVersion = 10.0.40219.1
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CustomMouseCurve", "CustomMouseCurve\CustomMouseCurve.csproj", "{31A13D49-A991-4D07-9B13-68AD5FC41249}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F} = {B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}
@@ -52,8 +50,8 @@ Global
 		{F52AA97E-180A-40ED-8F2B-09080171D6C7}.Debug|x64.Build.0 = Debug|x64
 		{F52AA97E-180A-40ED-8F2B-09080171D6C7}.Debug|x86.ActiveCfg = Debug|x86
 		{F52AA97E-180A-40ED-8F2B-09080171D6C7}.Debug|x86.Build.0 = Debug|x86
-		{F52AA97E-180A-40ED-8F2B-09080171D6C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F52AA97E-180A-40ED-8F2B-09080171D6C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F52AA97E-180A-40ED-8F2B-09080171D6C7}.Release|Any CPU.ActiveCfg = Release|x86
+		{F52AA97E-180A-40ED-8F2B-09080171D6C7}.Release|Any CPU.Build.0 = Release|x86
 		{F52AA97E-180A-40ED-8F2B-09080171D6C7}.Release|Mixed Platforms.ActiveCfg = Release|x86
 		{F52AA97E-180A-40ED-8F2B-09080171D6C7}.Release|Mixed Platforms.Build.0 = Release|x86
 		{F52AA97E-180A-40ED-8F2B-09080171D6C7}.Release|Win32.ActiveCfg = Release|x86
@@ -63,6 +61,7 @@ Global
 		{F52AA97E-180A-40ED-8F2B-09080171D6C7}.Release|x86.ActiveCfg = Release|x86
 		{F52AA97E-180A-40ED-8F2B-09080171D6C7}.Release|x86.Build.0 = Release|x86
 		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}.Debug|Any CPU.Build.0 = Debug|Win32
 		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
 		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}.Debug|Mixed Platforms.Build.0 = Debug|Win32
 		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}.Debug|Win32.ActiveCfg = Debug|Win32
@@ -71,6 +70,7 @@ Global
 		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}.Debug|x86.ActiveCfg = Debug|Win32
 		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}.Debug|x86.Build.0 = Debug|Win32
 		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}.Release|Any CPU.ActiveCfg = Release|Win32
+		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}.Release|Any CPU.Build.0 = Release|Win32
 		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}.Release|Mixed Platforms.ActiveCfg = Release|Win32
 		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}.Release|Mixed Platforms.Build.0 = Release|Win32
 		{B6EEE9FC-5723-4CB6-973F-AC69F7CCF36F}.Release|Win32.ActiveCfg = Release|Win32

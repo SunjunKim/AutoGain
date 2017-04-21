@@ -205,7 +205,7 @@ namespace CustomMouseCurve
             if (lastSpeed < speed)
                 lastSpeed = speed;
 
-
+            // CDgain = ppi / cpi;
             double gain = getInterpolatedValue(speed / binSize, gainCurves) * CDGain;
 
             tx = dx * gain;
@@ -213,9 +213,6 @@ namespace CustomMouseCurve
 
             return true;
         }
-
-
-
 
         /// <summary>
         /// Update the gain curve using AutoGain algorithm

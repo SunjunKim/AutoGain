@@ -87,3 +87,17 @@ C:\Users\선준\Downloads\CustomMouseAcceleration-master\CustomMouseAcceleration
 C:\Users\선준\Downloads\CustomMouseAcceleration-master\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.Properties.Resources.resources
 C:\Users\선준\Downloads\CustomMouseAcceleration-master\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.SetupForm.resources
 C:\Users\선준\Downloads\CustomMouseAcceleration-master\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.csproj.GenerateResource.Cache
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\bin\Debug\CustomMouseCurve.exe.config
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\bin\Debug\CustomMouseCurve.exe
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\bin\Debug\CustomMouseCurve.pdb
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\bin\Debug\Gma.System.MouseKeyHook.dll
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\bin\Debug\persistence1dWrapper.dll
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\bin\Debug\Gma.System.MouseKeyHook.pdb
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\bin\Debug\persistence1dWrapper.pdb
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.csprojResolveAssemblyReference.cache
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.Form1.resources
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.Properties.Resources.resources
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.SetupForm.resources
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.csproj.GenerateResource.Cache
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.exe
+C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.pdb
