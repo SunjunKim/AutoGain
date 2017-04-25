@@ -69,7 +69,7 @@ namespace CustomMouseCurve
         const double timewindow = 5; // unit: second
         List<double> gainCurves = new List<double>(binCount);
         int max_number_submovement = 3;        
-        double gain_change_rate = 0.1;
+        double gain_change_rate = 1;
 
         double lastSpeed = 0;
 
