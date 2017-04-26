@@ -1,5 +1,5 @@
-# CustomMouseAcceleration
-Customized mouse acceleration function
+# AutoGain
+Auto-Customization of a mouse acceleration function
 
 Complied on Visual Studio 2013
 
