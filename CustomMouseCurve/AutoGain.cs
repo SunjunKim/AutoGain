@@ -15,7 +15,6 @@ namespace CustomMouseCurve
 {
     class AutoGain
     {
-
         //logging properties
         int ballistic_submovement_count;
         int total_submovement_count;
@@ -25,7 +24,10 @@ namespace CustomMouseCurve
         int clutching_submovement_count;
         int interrupted_submovement_count;
         double trajectory_length;
+        double whole_trajectory_length;
+
         double net_gain_change;
+        double net_gain_change_signed;
         double force_inefficiency_x;
         double force_inefficiency_y;
         double acc_duration_ratio;
@@ -50,12 +52,12 @@ namespace CustomMouseCurve
         public Queue<MouseEventLog> Events { get { return this.events; } }
         public List<double> curve { get { return gainCurves; } }
         public bool doLearning = false;
-        
+
         // constants
         const int binCount = 128; // how many bins are there
         const double binSize = 0.005; // size of a bin unit: m/s 0.01 => 1cm/s motor movement
         double time_buffer_threshold = 1 / 125.0 * 3.0 * 1000.0;
-        
+
         // internal variables
         string deviceID;
         double rate; // mouse max. polling rate
@@ -68,8 +70,8 @@ namespace CustomMouseCurve
         Queue<MouseEventLog> events;
         const double timewindow = 5; // unit: second
         List<double> gainCurves = new List<double>(binCount);
-        int max_number_submovement = 3;        
-        double gain_change_rate = 1;
+        int max_number_submovement = 3;
+        double gain_change_rate = 0.1;
 
         double lastSpeed = 0;
 
@@ -107,7 +109,7 @@ namespace CustomMouseCurve
 
             String logPath = getLogPath();
             // get the latest log if exist
-            if(Directory.Exists(logPath))
+            if (Directory.Exists(logPath))
             {
                 // load the latest log.
                 loadAutoGain();
@@ -144,19 +146,19 @@ namespace CustomMouseCurve
             int slot = (int)Math.Min(mouseSpeed, 20) / 2;
 
             gainCurves.Clear();
-            if(!isEpp)
+            if (!isEpp)
             {
                 gainCurves.Add(0);
-                for (int i = 0; i < binCount - 1;i++ )
+                for (int i = 0; i < binCount - 1; i++)
                 {
-                    gainCurves.Add(winMultipliers[slot]/CDGain);
+                    gainCurves.Add(winMultipliers[slot] / CDGain);
                 }
             }
             else
             {
-                for(int i=0;i<binCount;i++)
+                for (int i = 0; i < binCount; i++)
                 {
-                    gainCurves.Add(epp[i]*(mouseSpeed/10.0)/CDGain);
+                    gainCurves.Add(epp[i] * (mouseSpeed / 10.0) / CDGain);
                 }
             }
             saveAutoGain();
@@ -630,6 +632,14 @@ namespace CustomMouseCurve
                 trajectory_length += Math.Sqrt(temp_dx * temp_dx + temp_dy * temp_dy);
             }
 
+            for (int i = 0; i < position_x.Count - 1; i++)
+            {
+                double temp_dx = position_x[i + 1] - position_x[i];
+                double temp_dy = position_y[i + 1] - position_y[i];
+
+                whole_trajectory_length += Math.Sqrt(temp_dx * temp_dx + temp_dy * temp_dy);
+            }
+
             int speed_peak_index = 0;
             double temp_speed = 0;
 
@@ -794,9 +804,12 @@ namespace CustomMouseCurve
             //writeLog(logger, "Overshoot", ""+overshootCount);
 
             double gainChangeSum = 0;
+            double gainChangeSum_2 = 0;
+
             for (int i = 0; i < binCount; i++)
             {
                 gainChangeSum += Math.Abs(gainChanges[i]);
+                gainChangeSum_2 += gainChanges[i];
                 gainChanges[i] = 0.0;
             }
 
@@ -819,6 +832,7 @@ namespace CustomMouseCurve
             */
 
             net_gain_change = gainChangeSum;
+            net_gain_change_signed = gainChangeSum_2;
 
             //            writeLog("GainChange", gainChangeSum.ToString());
             #endregion
@@ -851,7 +865,9 @@ namespace CustomMouseCurve
             average_motor_speed = 0;
             average_display_speed = 0;
             net_gain_change = 0;
+            net_gain_change_signed = 0;
             trajectory_length = 0;
+            whole_trajectory_length = 0;
             acc_duration_ratio = 0;
             click_location_x = 0;
             click_location_y = 0;
@@ -928,7 +944,7 @@ namespace CustomMouseCurve
             String pathString = getLogPath();
             String filename = DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".csv";
             String fileString = Path.Combine(pathString, filename);
-            
+
             StreamWriter sw;
             Directory.CreateDirectory(pathString);
             sw = new StreamWriter(fileString, false, Encoding.UTF8);
@@ -976,7 +992,7 @@ namespace CustomMouseCurve
             {
                 double val = 0;
                 success &= double.TryParse(lines[i], out val);
-                if(success)
+                if (success)
                 {
                     gainCurves.Add(val);
                 }
@@ -1008,7 +1024,9 @@ namespace CustomMouseCurve
             logStr += "," + clutching_submovement_count;
             logStr += "," + interrupted_submovement_count;
             logStr += "," + trajectory_length;
+            logStr += "," + whole_trajectory_length;
             logStr += "," + net_gain_change;
+            logStr += "," + net_gain_change_signed;
             logStr += "," + force_inefficiency_x;
             logStr += "," + force_inefficiency_y;
             logStr += "," + acc_duration_ratio;
@@ -1020,7 +1038,7 @@ namespace CustomMouseCurve
             logStr += "," + maximum_display_speed;
             logStr += "," + total_duration;
             logStr += "," + sub_aim_point;
-            
+
             return logStr;
         }
 
@@ -1036,7 +1054,7 @@ namespace CustomMouseCurve
             // maximum value (for out of index)
             if (upperIndex >= list.Count)
                 return list[list.Count - 1];
-            
+
             return linearMap(index, lowerIndex, upperIndex, list[lowerIndex], list[upperIndex]);
         }
         public static double linearMap(double x, double x0, double x1, double y0, double y1)
