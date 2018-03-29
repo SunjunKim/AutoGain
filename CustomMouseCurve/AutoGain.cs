@@ -192,8 +192,7 @@ namespace CustomMouseCurve
 
                 lastSpeed = 0;
                 // update the gain curve
-                if (doLearning)
-                    updateCurve();
+                updateCurve();
                 // clear the queue
                 events.Clear();
             }
@@ -854,7 +853,7 @@ namespace CustomMouseCurve
             //            writeLog("GainChange", gainChangeSum.ToString());
             #endregion
 
-            if (is_updated)
+            if (is_updated && doLearning)
             {
                 Console.WriteLine("Updated");
                 saveAutoGain();
