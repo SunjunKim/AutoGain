@@ -111,7 +111,7 @@ namespace CustomMouseCurve
             p.x += tx;
             p.y += ty;
 
-            ag.doLearning = checkBoxLearninig.Checked;
+            checkBoxLearninig.Checked = ag.doLearning;
             ag.feedMouseEvent(new AutoGain.MouseEventLog(usButtonFlags, x, y, tx, ty, usTimestamp, usTimestamp/1000.0, timespan, source));
             
             // move the mouse pointer

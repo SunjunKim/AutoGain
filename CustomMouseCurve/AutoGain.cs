@@ -41,8 +41,6 @@ namespace CustomMouseCurve
         String overshoot_or_undershoot;
         double sub_aim_point = 0.95;
 
-
-
         // public properties
         public string DeviceID { get { return this.deviceID; } }
         public double HZ { get { return this.rate; } }
@@ -89,6 +87,9 @@ namespace CustomMouseCurve
         int reportCounter = 0;
         Timer hzCalculateTimer;
 
+        // for automatic learning switch
+        DateTime logginStartTime;
+        int initialPeriodInMinutes = 24 * 60; // set to 24 hours
 
         /// <summary>
         /// AutoGain initializer
@@ -123,8 +124,12 @@ namespace CustomMouseCurve
                 this.ppi = dpi;
 
                 loadWindowCurve();
+                // record the first time
+                saveInitialDate();
                 saveAutoGain();
             }
+
+            logginStartTime = loadInitialDate();
 
             // logger initialize
             int capacity = (int)(timewindow * 1000);
@@ -132,7 +137,6 @@ namespace CustomMouseCurve
 
             logger = openLog();
         }
-
 
 
         // TODO: 지금은 constant지만, 나중에 여러 default curve를 로드할 수 있도록 수정.
@@ -173,6 +177,19 @@ namespace CustomMouseCurve
             //if((datapoint.buttonflags & (RawMouse.RI_MOUSE_LEFT_BUTTON_DOWN | RawMouse.RI_MOUSE_RIGHT_BUTTON_DOWN)) != 0)
             if ((datapoint.buttonflags & RawMouse.RI_MOUSE_LEFT_BUTTON_DOWN) != 0)
             {
+                TimeSpan useTime = DateTime.Now - logginStartTime;
+                if (useTime.Minutes > initialPeriodInMinutes)
+                {
+                    Console.WriteLine("Learning Start");
+                    if(doLearning == false)
+                        saveLearningStartDate();
+                    doLearning = true;
+                }
+                else
+                {
+                    doLearning = false;
+                }
+
                 lastSpeed = 0;
                 // update the gain curve
                 if (doLearning)
@@ -937,6 +954,64 @@ namespace CustomMouseCurve
             String pathString = Path.Combine(basePath, this.deviceID);
 
             return pathString;
+        }
+
+        // recording the time it starts learninig
+        public void saveLearningStartDate()
+        {
+            String pathString = getLogPath();
+            String filename = "0_learning_starttime.csv";
+            String fileString = Path.Combine(pathString, filename);
+
+            if (File.Exists(fileString))
+                return;
+
+            StreamWriter sw;
+            Directory.CreateDirectory(pathString);
+            sw = new StreamWriter(fileString, false, Encoding.UTF8);
+
+            sw.Write(DateTime.Now.ToBinary());
+
+            sw.Flush();
+            sw.Close();
+        }
+
+
+        // recording the first time it creates logs.
+        public void saveInitialDate()
+        {
+            String pathString = getLogPath();
+            String filename = "0_starttime.csv";
+            String fileString = Path.Combine(pathString, filename);
+
+            StreamWriter sw;
+            Directory.CreateDirectory(pathString);
+            sw = new StreamWriter(fileString, false, Encoding.UTF8);
+
+            sw.Write(DateTime.Now.ToBinary());
+
+            sw.Flush();
+            sw.Close();
+        }
+
+        public DateTime loadInitialDate()
+        {
+
+            String pathString = getLogPath();
+            String filename = "0_starttime.csv";
+            String fileString = Path.Combine(pathString, filename);
+
+            if (!File.Exists(fileString))
+                return DateTime.Now;
+
+            string[] lines = File.ReadAllLines(fileString, Encoding.UTF8);
+
+            long binaryDate;
+
+            long.TryParse(lines[0], out binaryDate);
+            DateTime startTime = DateTime.FromBinary(binaryDate);
+
+            return startTime;
         }
 
         public void saveAutoGain()

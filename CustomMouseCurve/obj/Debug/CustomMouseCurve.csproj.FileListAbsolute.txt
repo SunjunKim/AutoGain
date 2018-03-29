@@ -101,3 +101,17 @@ C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\obj\D
 C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.csproj.GenerateResource.Cache
 C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.exe
 C:\Users\inorn\Documents\Autogain\CustomMouseAcceleration\CustomMouseCurve\obj\Debug\CustomMouseCurve.pdb
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\bin\Debug\CustomMouseCurve.exe.config
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\obj\Debug\CustomMouseCurve.exe
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\obj\Debug\CustomMouseCurve.pdb
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\bin\Debug\CustomMouseCurve.exe
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\bin\Debug\CustomMouseCurve.pdb
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\bin\Debug\Gma.System.MouseKeyHook.dll
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\bin\Debug\persistence1dWrapper.dll
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\bin\Debug\persistence1dWrapper.pdb
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\bin\Debug\Gma.System.MouseKeyHook.pdb
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\obj\Debug\CustomMouseCurve.csprojResolveAssemblyReference.cache
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\obj\Debug\CustomMouseCurve.Form1.resources
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\obj\Debug\CustomMouseCurve.Properties.Resources.resources
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\obj\Debug\CustomMouseCurve.SetupForm.resources
+C:\Users\Sunjun Kim\Documents\gitProjects\AutoGain\CustomMouseCurve\obj\Debug\CustomMouseCurve.csproj.GenerateResource.Cache
