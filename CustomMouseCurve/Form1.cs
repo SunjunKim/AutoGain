@@ -254,8 +254,11 @@ namespace CustomMouseCurve
         {
             if(polling == 0)
                 unusedCounter++;
-            toolStripStatusLabel1.Text = "Rate: " + polling + " Hz";
+            double useTime = 0;
+            if (currentAG != null)
+                useTime = currentAG.getUseTime();
 
+            toolStripStatusLabel1.Text = "Rate: " + polling + " Hz / UseTime: " + useTime + " min";
             // if a mouse is unused until 60s, reset the counter;
             if(unusedCounter > 60)
             {

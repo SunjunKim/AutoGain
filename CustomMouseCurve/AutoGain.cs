@@ -89,7 +89,7 @@ namespace CustomMouseCurve
 
         // for automatic learning switch
         DateTime logginStartTime;
-        int initialPeriodInMinutes = 24 * 60; // set to 24 hours
+        int initialPeriodInMinutes = 60 * 24 * 6; // set to 6 days
 
         /// <summary>
         /// AutoGain initializer
@@ -168,6 +168,12 @@ namespace CustomMouseCurve
             saveAutoGain();
         }
 
+        public double getUseTime()
+        {
+            TimeSpan useTime = DateTime.Now - logginStartTime;
+            return useTime.TotalMinutes;
+        }
+
         public void feedMouseEvent(MouseEventLog datapoint)
         {
             events.Enqueue(datapoint);
@@ -177,12 +183,13 @@ namespace CustomMouseCurve
             //if((datapoint.buttonflags & (RawMouse.RI_MOUSE_LEFT_BUTTON_DOWN | RawMouse.RI_MOUSE_RIGHT_BUTTON_DOWN)) != 0)
             if ((datapoint.buttonflags & RawMouse.RI_MOUSE_LEFT_BUTTON_DOWN) != 0)
             {
-                TimeSpan useTime = DateTime.Now - logginStartTime;
-                if (useTime.Minutes > initialPeriodInMinutes)
+                if (getUseTime() > initialPeriodInMinutes)
                 {
-                    Console.WriteLine("Learning Start");
                     if(doLearning == false)
+                    {
                         saveLearningStartDate();
+                        Console.WriteLine("Learning Start");    
+                    }
                     doLearning = true;
                 }
                 else
