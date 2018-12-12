@@ -99,6 +99,7 @@ namespace CustomMouseCurve
         public AutoGain(string deviceID, double dpi = 96, double cpi = 800)
         {
             this.deviceID = deviceID;
+            loadInitParams();
 
             Rectangle resolution = Screen.PrimaryScreen.Bounds;
 
@@ -106,8 +107,6 @@ namespace CustomMouseCurve
             hzCalculateTimer.Interval = 1000;
             hzCalculateTimer.Tick += hzCalculateTimer_Tick;
             hzCalculateTimer.Start();
-
-            loadInitParams();
 
             String logPath = getLogPath();
             // get the latest log if exist
@@ -146,10 +145,13 @@ namespace CustomMouseCurve
             {
                 TextReader tr = new StreamReader("param.txt");
 
-
+                int p0 = Int32.Parse(tr.ReadLine());
                 double p1 = Double.Parse(tr.ReadLine());
+
+                this.initialPeriodInMinutes = p0;
                 this.gain_change_rate = p1;
 
+                Console.WriteLine("Initial Period set to {0}", p0);
                 Console.WriteLine("Gain change rate set to {0}", p1);
             }
             catch(Exception e)

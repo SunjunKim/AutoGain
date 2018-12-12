@@ -102,6 +102,9 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+    <Content Include="param.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
