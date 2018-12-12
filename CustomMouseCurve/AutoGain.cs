@@ -75,7 +75,6 @@ namespace CustomMouseCurve
 
         StreamWriter logger;
 
-
         //Aim point estimation
         double process_noise = 0.2;
         double sensor_noise = 40.0;
@@ -108,6 +107,8 @@ namespace CustomMouseCurve
             hzCalculateTimer.Tick += hzCalculateTimer_Tick;
             hzCalculateTimer.Start();
 
+            loadInitParams();
+
             String logPath = getLogPath();
             // get the latest log if exist
             if (Directory.Exists(logPath))
@@ -136,6 +137,26 @@ namespace CustomMouseCurve
             events = new Queue<MouseEventLog>(capacity);
 
             logger = openLog();
+        }
+
+        // changable parameters
+        private void loadInitParams()
+        {
+            try
+            {
+                TextReader tr = new StreamReader("param.txt");
+
+
+                double p1 = Double.Parse(tr.ReadLine());
+                this.gain_change_rate = p1;
+
+                Console.WriteLine("Gain change rate set to {0}", p1);
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Reading param.txt failed, {}", e.Message);
+                Application.Exit();                
+            }
         }
 
 
